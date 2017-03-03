@@ -1,31 +1,18 @@
-BIN_FILES  = client server array
+all: array.o libarray.a client server
 
-CC = gcc
+array.o:
+	gcc -Wall -c array.c
 
-CPPFLAGS = -I$(INSTALL_PATH)/include -Wall
+libarray.a:
+	ar -rv libarray.a array.o
 
-#LDFLAGS = -L$(INSTALL_PATH)/lib/
-#LDLIBS = -lpthread
+client:
+	gcc -Wall client.c -o client libarray.a -lrt
 
-
-all: $(BIN_FILES)
-.PHONY : all
-
-
-client: client.o
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ $(LDLIBS) -o $@ -lrt
-
-server: server.o
-	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
-
-array: array.o
-	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
-
-%.o: %.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $<
+server:
+	gcc -Wall server.c -o server -lpthread -lrt
 
 clean:
-	rm -f $(BIN_FILES) *.o
+	rm client server array.o libarray.a
 
-.SUFFIXES:
-.PHONY : clean
+rebuild: clean array.o libarray.a client server
