@@ -1,6 +1,6 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
-#define NUM_MSGS		1
+#define NUM_MSGS		3
 
 struct request{
 	char name[10];				/* For the name of the array */
@@ -12,6 +12,7 @@ struct request{
 
 struct response{
 	char value;					/* Value returned by the operations of the server */
+	int get_value;				/* To store the value of the get operation */
 	char error;					/* Error value returned by the server */
 };
 

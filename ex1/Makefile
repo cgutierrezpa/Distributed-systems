@@ -13,6 +13,6 @@ server:
 	gcc -Wall server.c -o server -lpthread -lrt
 
 clean:
-	rm client server array.o libarray.a
+	rm client client.o server array.o libarray.a
 
 rebuild: clean array.o libarray.a client server

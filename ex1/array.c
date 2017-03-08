@@ -63,9 +63,10 @@ int init(char* name, int N){
         exit(-1);
 	}
 
+	res = (struct response) res;
+
 	mq_close(clientq);
     mq_unlink(req.queue);
-    res = (struct response) res;
     return ((int) res.value);
 }
 
@@ -120,9 +121,10 @@ int set(char * name, int i, int value){
         exit(-1);
 	}
 
+	res = (struct response) res;
+
 	mq_close(clientq);
     mq_unlink(req.queue);
-    res = (struct response) res;
     return ((int) res.value);
 }
 
@@ -136,7 +138,7 @@ int get(char * name, int i, int * value){
 	/* Initialize request parameters */
 	strcpy(req.name, name);
 	req.Ni = i;				//i
-	req.value = *value;		//value
+	//req.value = *value;		//value
 	req.op = 2;				//Get
 	strcpy(req.queue, clientQname);
 
@@ -175,9 +177,11 @@ int get(char * name, int i, int * value){
         exit(-1);
 	}
 
+	res = (struct response) res;
+	*value = res.get_value;
+
 	mq_close(clientq);
     mq_unlink(req.queue);
-    res = (struct response) res;
     return ((int) res.value);
 }
 
@@ -228,8 +232,9 @@ int destroy(char * name){
         exit(-1);
 	}
 
+	res = (struct response) res;
+
 	mq_close(clientq);
     mq_unlink(req.queue);
-    res = (struct response) res;
     return ((int) res.value);
 }
