@@ -1,5 +1,7 @@
 #include <unistd.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include "read_line.h"
 
 int send_msg(int socket, char *message, int length)
@@ -9,7 +11,7 @@ int send_msg(int socket, char *message, int length)
 		
 
 	do {	
-		r = write(socket, message, l, 0);
+		r = send(socket, message, l, 0);
 		l = l -r; 	/* Pending data to send */
 		message = message + r;	/*  */
 	} while ((l>0) && (r>=0));	/* We check the returned value in case all the data was not sent */
@@ -27,7 +29,7 @@ int recv_msg(int socket, char *message, int length)
 		
 
 	do {	
-		r = read(socket, message, l, 0);
+		r = recv(socket, message, l, 0);
 		l = l -r ;	/* Pending data to receive */
 		message = message + r;
 	} while ((l>0) && (r>=0)); /* We check the return value in case all the data was not received */

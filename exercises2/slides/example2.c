@@ -33,11 +33,11 @@ int main(int argc, const char** argv){
 
 	for (p = hp->h_addr_list; *p != 0; p++){
 		memcpy(&in.s_addr, *p, sizeof(in.s_addr));
-		printf("%s\t%s\n", inet_ntoa(in), hp->h_name);
+		printf("List: %s\t%s\n", inet_ntoa(in), hp->h_name);
 	}
 
 	for (q = hp->h_aliases; *q != 0; q++){
-		printf("%s\n", *q);
+		printf("Aliases: %s\n", *q);
 	}
 
 	exit(1);
