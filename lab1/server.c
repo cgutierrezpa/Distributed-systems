@@ -55,7 +55,7 @@ int main(void){
 			exit(-1);
 		}
 
-		n = readLine(sc, req_buffer, MAX_LINE);
+		n = read(sc, req_buffer, MAX_LINE);
 		printf("Recieived from client\n");
 		if (n!=-1)
 		write(1, req_buffer, n);
