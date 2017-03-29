@@ -19,6 +19,7 @@ class client {
 	
 	private static String _server   = null;
 	private static int _port = -1;
+	private static InetAddress server_addr = null;
 		
 	
 	/********************* METHODS ********************/
@@ -33,6 +34,43 @@ class client {
 	static RC register(String user) 
 	{
 		// Write your code here
+		///////////////////////////////////////////////
+		///////////////     PROTOCOL    ///////////////
+		///////////////////////////////////////////////
+		//1. Connect to the server, using the IP and port passed in the command line
+		try{
+			Socket sc = new Socket(_server, _port);
+		}
+		catch (java.io.IOException e) {
+			System.out.println("Exception: " + e);
+			e.printStackTrace();
+			return RC.ERROR;
+		}
+
+		DataOutputStream out = new DataOutputStream(sc.getOutputStream());
+		DataInputStream in = new DataInputStream(sc.getInputStream());
+
+		//2. The string "REGISTER" is sent indicating the operation
+		String operation = new String("REGISTER");
+		out.writeBytes(operation);
+		out.write('\0');			//Insert ASCII 0 at the end
+
+		//3. A string of characters is sent with the user to be registered
+		out.writeBytes(user);
+		out.write('\0');
+
+		//4. Check response from the server. If 0, success; if 1 user is previously registered; if 2 other case
+		String response = in.readLine();
+
+		//5. Close connection
+		try{
+			sc.close();
+		}
+		catch (java.io.IOException e) {
+			System.out.println("Exception: " + e);
+			e.printStackTrace();
+			return RC.ERROR;
+		}
 		return RC.ERROR;
 	}
 	
