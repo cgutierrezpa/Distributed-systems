@@ -1,0 +1,16 @@
+DECISION MAKING POINTS
+
+-Server will be receiving a first string from the client indicating the command/operation/service, that can be REGISTER, UNREGISTER, CONNECT, DISCONNECT or SEND. For optimization, the maximum length of a a command string is of 10 (number of characters in the largest possible command, which is UNREGISTER or DISCONNECT) +1 character for the ASCII '\0'. So this will be stores in a char array of 11 bytes.
+
+-A username can contain at most 15 characters, including numbers and letters.  <<PROBLEM WITH THE PROTOCOL, WHAT HAPPENS IF OTHER SERVER CONSIDERS A SIZE OF 20 FOR THE USERNAME?>> ===> As it is not specified in the guidelines and it may be something that interferes with the protocol, it is consideres to have a username of 256 characters
+
+-Is the shell that has the role to classify the output value of the functions (register, etc.) and print the message according to it? Or should be the function itself <<IT MAKES MORE SENSE FOR THE FUNCTION ITSELF TO CHECK AND PRINT THE RESULT, BUT THEN WHAT ARE THE RC.OK, RC.ERROR AND RC.USER_ERROR RETURN VALUES FOR???>>
+
+-CAN WE USE 0 AND 1 TO REPRESENT "OFF" AND "ON" FOR THE STATUS OF THE USER?
+
+-UNSIGNED SHORT (uint16_t) TO REPRESENT THE PORT NUMBER?
+
+-DO WE SEND A STRING OR A BYTE FROM SERVER TO CLIENT?? ((IMPORTANT: All fields sent will be encoded as strings. Remember that the
+strings end with the ASCII ’\0’ code))
+
+-HOW DO WE GET THE IP AND PORT FROM A CLIENT??

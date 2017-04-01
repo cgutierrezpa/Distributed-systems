@@ -1,5 +1,6 @@
 import java.io.*;
 import gnu.getopt.Getopt;
+import java.net.Socket;
 
 
 class client {
@@ -12,14 +13,13 @@ class client {
 	private static enum RC {
 		OK,
 		ERROR,
-		USER_ERROR	
+		USER_ERROR
 	};
 	
 	/******************* ATTRIBUTES *******************/
 	
 	private static String _server   = null;
 	private static int _port = -1;
-	private static InetAddress server_addr = null;
 		
 	
 	/********************* METHODS ********************/
@@ -37,40 +37,49 @@ class client {
 		///////////////////////////////////////////////
 		///////////////     PROTOCOL    ///////////////
 		///////////////////////////////////////////////
-		//1. Connect to the server, using the IP and port passed in the command line
 		try{
+			//1. Connect to the server, using the IP and port passed in the command line
 			Socket sc = new Socket(_server, _port);
-		}
-		catch (java.io.IOException e) {
-			System.out.println("Exception: " + e);
-			e.printStackTrace();
-			return RC.ERROR;
-		}
 
-		DataOutputStream out = new DataOutputStream(sc.getOutputStream());
-		DataInputStream in = new DataInputStream(sc.getInputStream());
+			DataOutputStream out = new DataOutputStream(sc.getOutputStream());
+			BufferedReader in = new BufferedReader(new InputStreamReader(sc.getInputStream()));
 
-		//2. The string "REGISTER" is sent indicating the operation
-		String operation = new String("REGISTER");
-		out.writeBytes(operation);
-		out.write('\0');			//Insert ASCII 0 at the end
+			//2. The string "REGISTER" is sent indicating the operation
+			String operation = new String("REGISTER");
+			out.writeBytes(operation);
+			out.write('\0');			//Insert ASCII 0 at the end
 
-		//3. A string of characters is sent with the user to be registered
-		out.writeBytes(user);
-		out.write('\0');
+			//3. A string of characters is sent with the user to be registered
+			out.writeBytes(user);
+			out.write('\0');
 
-		//4. Check response from the server. If 0, success; if 1 user is previously registered; if 2 other case
-		String response = in.readLine();
+			//4. Check response from the server. If 0, success; if 1 user is previously registered; if 2 other case
+			String response = in.readLine();
 
-		//5. Close connection
-		try{
+			//5. Close connection
 			sc.close();
+			out.close();
+			in.close();
+			
+			//Decode the response from the server
+			switch(response){
+				case "0":
+					System.out.println("c> REGISTER OK");
+					return RC.OK;
+				case "1":
+					System.out.println("c> REGISTER IN USE");
+					return RC.USER_ERROR;
+				case "2":
+					System.out.println("c> REGISTER FAIL");
+					return RC.ERROR;
+			}
+
 		}
 		catch (java.io.IOException e) {
 			System.out.println("Exception: " + e);
 			e.printStackTrace();
-			return RC.ERROR;
 		}
+
 		return RC.ERROR;
 	}
 	
@@ -105,6 +114,7 @@ class client {
 	 * 
 	 * @return OK if successful
 	 * @return USER_ERROR if the user does not exist
+	 * @return USER_CONNECT_ERROR if it is already disconnected
 	 * @return ERROR if another error occurred
 	 */
 	static RC disconnect(String user) 
@@ -156,7 +166,17 @@ class client {
 					/********** UNREGISTER ************/
 					else if (line[0].equals("UNREGISTER")) {
 						if  (line.length == 2) {
-							unregister(line[1]); // userName = line[1]
+							switch(unregister(line[1])){ // userName = line[1]
+								case OK:
+									System.out.println("c> UNREGISTER OK");
+									break;
+								case USER_ERROR:
+									System.out.println("c> USER DOES NOT EXIST");
+									break;
+								case ERROR:
+									System.out.println("c> UNREGISTER FAIL");
+									break;
+							}
 						} else {
 							System.out.println("Syntax error. Usage: UNREGISTER <userName>");
 						}
@@ -165,7 +185,20 @@ class client {
                     /************ CONNECT *************/
                     else if (line[0].equals("CONNECT")) {
 						if  (line.length == 2) {
-							connect(line[1]); // userName = line[1]
+							switch(connect(line[1])){ // userName = line[1] AQUI CREAMOS EL HILO SERVIDOR
+								case OK:
+									System.out.println("c> CONNECT OK");
+									break;
+								case USER_ERROR:
+									System.out.println("c> CONNECT FAIL, USER DOES NOT EXIST");
+									break;
+								case USER_CONNECT_ERROR:
+									System.out.println("c> USER ALREADY CONNECTED");
+									break;
+								case ERROR:
+									System.out.println("c> CONNECT FAIL");
+									break;
+							}
 						} else {
 							System.out.println("Syntax error. Usage: CONNECT <userName>");
                     	}
@@ -174,7 +207,20 @@ class client {
                     /********** DISCONNECT ************/
                     else if (line[0].equals("DISCONNECT")) {
 						if  (line.length == 2) {
-							disconnect(line[1]); // userName = line[1]
+							switch(disconnect(line[1])){ // userName = line[1]
+								case OK:
+									System.out.println("c> DISCONNECT OK");
+									break;
+								case USER_ERROR:
+									System.out.println("c> DISCONNECT FAIL / USER DOES NOT EXIST");
+									break;
+								case USER_CONNECT_ERROR:
+									System.out.println("c> DISCONNECT FAIL / USER NOT CONNECTED");
+									break;
+								case ERROR:
+									System.out.println("c> DISCONNECT FAIL");
+									break;
+							}
 						} else {
 							System.out.println("Syntax error. Usage: DISCONNECT <userName>");
                     	}

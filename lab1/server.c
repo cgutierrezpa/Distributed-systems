@@ -6,14 +6,31 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <string.h>
 #include "read_line.h"
 
-#define MAX_LINE	256
+#define MAX_MSG	256
+#define MAX_OP 11
+#define MAX_USERNAME 256
 
-int main(void){
+int main(int argc, char * argv[]){
 	struct sockaddr_in server_addr, client_addr;
 	int sd, sc;
 	int val;
+	int server_port;
+
+	/* Check command */
+	if(argc != 3 || strcmp(argv[1],"-p") != 0){
+		printf("Usage: ./server -p <port>\n");
+		exit(-1);
+	} 
+
+	/* Check if the port number passed as parameter is valid */
+	server_port = atoi(argv[2]);
+	if ((server_port < 1024) || (server_port > 65535)) {
+			printf("Error: Port must be in the range 1024 <= port <= 65535\n");
+			exit(-1);
+	}
 
 	sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);	/* This socket has no address assigned */
 	if(sd == -1){
@@ -27,7 +44,7 @@ int main(void){
 	bzero((char*) &server_addr, sizeof(server_addr));	/* Initialize the socket address of the server to 0 */
 	server_addr.sin_family			= AF_INET;
 	server_addr.sin_addr.s_addr		= INADDR_ANY;	/* Listens to all addresses */
-	server_addr.sin_port			= htons(10200);	/* Port number */
+	server_addr.sin_port			= htons(server_port);	/* Port number */
 
 	if((bind(sd, (struct sockaddr*) &server_addr, sizeof(server_addr))) == -1){
 		perror("Error when binding the address to the socket");
@@ -41,9 +58,12 @@ int main(void){
 
 	socklen_t size = sizeof(client_addr);
 
-	char req_buffer[MAX_LINE];
-	//char res_buffer[MAX_LINE];
+	//Server will receive
+	char operation_buff[MAX_OP];
+	char user_buff[MAX_USERNAME];
+	char msg_buff[MAX_MSG];
 	int n;
+	int m;
 	
 
 	while(1){
@@ -55,14 +75,30 @@ int main(void){
 			exit(-1);
 		}
 
-		n = read(sc, req_buffer, MAX_LINE);
-		printf("Recieived from client\n");
-		if (n!=-1)
-		write(1, req_buffer, n);
+		n = readLine(sc, operation_buff, MAX_OP);
+		if (n!=-1){
+			if (strcmp(operation_buff, "REGISTER") == 0){
+			}
+			else{
+				printf("OPERATION NOT KNOWN...");
+			}
+		}
 
-		
+		m = readLine(sc, user_buff, MAX_USERNAME);
 
-		send_msg(sc, req_buffer, MAX_LINE);
+		uint16_t client_port = client_addr.sin_port;
+
+		struct sockaddr_in test_addr;
+
+		getpeername(sc, (struct sockaddr *) &test_addr, (socklen_t *) sizeof(test_addr));
+		//test_addr.sin_addr is of type struct in_addr
+		char * ip = inet_ntoa(test_addr.sin_addr);
+		printf("CLIENT ADDRESS: %s\n", ip);
+		printf("CLIENT PORT NUMBER: %d\n", client_port);
+
+		char res = '0';
+
+		send_msg(sc, &res, sizeof(res));
 		close(sc);
 		
 	}
