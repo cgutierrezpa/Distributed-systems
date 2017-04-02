@@ -8,10 +8,12 @@
 #include <strings.h>
 #include <string.h>
 #include "read_line.h"
+#include "user_list.h"
+#include "msg_list.h"
 
-#define MAX_MSG	256
-#define MAX_OP 11
-#define MAX_USERNAME 256
+#define MAX_OP 	11
+#define TRUE 	1
+#define FALSE 	0
 
 int main(int argc, char * argv[]){
 	struct sockaddr_in server_addr, client_addr;
@@ -31,6 +33,8 @@ int main(int argc, char * argv[]){
 			printf("Error: Port must be in the range 1024 <= port <= 65535\n");
 			exit(-1);
 	}
+
+	//printf();
 
 	sd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);	/* This socket has no address assigned */
 	if(sd == -1){
@@ -67,7 +71,7 @@ int main(int argc, char * argv[]){
 	
 
 	while(1){
-		printf("Waiting for connection...\n");
+		printf("s> ");
 
 		sc = accept(sd, (struct sockaddr *) &client_addr, &size);
 		if(sc == -1){

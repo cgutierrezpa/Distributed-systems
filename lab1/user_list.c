@@ -5,7 +5,6 @@
 #include "msg_list.h"
 #include "user_list.h"
 
-
  
  int isRegistered(char * username){
     struct user *temp;
@@ -50,25 +49,6 @@ int registerUser(char * username){
     return 0;
 }
 
-/* Return 0 if disconnect OK; 1 if user is not registered;
-    If the statusFlag is 0, it tries to disconnect the user but if already disconnected returns 2
-    If the statusFlag is 1, it tries to connect the user but if already connected returns 1*/
-int updateUserStatus(char * username, char statusFlag){
-    struct user *temp = user_head;
-
-    /* Iterate over the list */
-    while(temp != NULL){
-        if(strcmp(temp->username, username) == 0){  //User found
-            if (temp->status == statusFlag) return 2;        
-            temp->status = statusFlag;
-            return 0;
-        }
-    }
-
-    /* If the code reaches this point, the user was not found registered in the system */
-    return 1;
-}
-
 /* Return 0 if disconnect OK; 1 if user is not registered; 2 if registered but not connected */
 int connectUser(char * username, uint16_t port){
     struct user *temp = user_head;
@@ -106,33 +86,8 @@ int disconnectUser(char * username){
 
     return 1;
 }
-/*
  
- 
-void insert(int num){
-    int c = 0;
-    struct user *temp;
-    temp = user_head;
-    if(temp == NULL){
-        add(num);
-    }
-    else{
-        while(temp != NULL){
-            if(temp->data < num)
-                c++;
-                temp = temp->next;
-        }
-    if(c == 0)
-        add(num);
-    else if(c < count())
-        addafter(num,++c);
-    else
-        append(num);
-    }
-}
- 
- 
- */
+
 /* Returns 1 if the user does not exist. 0 if the user is deleted correctly */
 int unregisterUser(char * username){
     /* Check if the user is not registered */
@@ -199,7 +154,6 @@ unsigned int updateID(struct user *usr){
     usr->last_msg_id = usr->last_msg_id+1;
     //If it results in 0, then the maximum representable number is overflown
     if(usr->last_msg_id == 0) usr->last_msg_id = 1;
-    printf("LAST PENDING MESSAGE ID IS: %d", usr->last_msg_id);
 
     return usr->last_msg_id;
 }
@@ -227,17 +181,3 @@ void removePendMsg(char * username){
         temp = temp->next;
     }
 }
- 
- /*
-int count(){
-    struct user *n;
-    int c = 0;
-    n = user_head;
-
-    while(n != NULL){
-        n = n->next;
-        c++;
-    }
-
-    return c;
-}*/
