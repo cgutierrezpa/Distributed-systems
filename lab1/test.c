@@ -9,6 +9,11 @@
 
 int main(void){
     char line[MAX_MSG];
+    char ip [1];
+    //ip = "DISCONNECT";
+    strcpy(ip, "DISCONNECT");
+    printf("String: %s\n", ip);
+    printf("Size: %d\n", sizeof(ip));
 
     //struct user * user_head = (struct user *) malloc(sizeof(struct user));
     while(1){

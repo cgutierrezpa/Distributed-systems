@@ -1,5 +1,7 @@
 DECISION MAKING POINTS
 
+-FIFO QUEUE FOR PENDING MESSAGES
+
 -Server will be receiving a first string from the client indicating the command/operation/service, that can be REGISTER, UNREGISTER, CONNECT, DISCONNECT or SEND. For optimization, the maximum length of a a command string is of 10 (number of characters in the largest possible command, which is UNREGISTER or DISCONNECT) +1 character for the ASCII '\0'. So this will be stores in a char array of 11 bytes.
 
 -A username can contain at most 15 characters, including numbers and letters.  <<PROBLEM WITH THE PROTOCOL, WHAT HAPPENS IF OTHER SERVER CONSIDERS A SIZE OF 20 FOR THE USERNAME?>> ===> As it is not specified in the guidelines and it may be something that interferes with the protocol, it is consideres to have a username of 256 characters
@@ -14,3 +16,16 @@ DECISION MAKING POINTS
 strings end with the ASCII ’\0’ code))
 
 -HOW DO WE GET THE IP AND PORT FROM A CLIENT??
+
+-CHECK FOR -1 EVERYTIME WE DO AN OPERATION WITH A SOCKET??
+
+-RETURNING 0 OR '0' FROM THE SERVER IS DIFFERENT. WHAT IS THE PROTOCOL ==> SHOULD BE CHAR 0, NOT CHAR '0', BECAUSE THE BIT REPRESENTATION IS DIFFERENT
+
+-CREATE THREADS ONCE WE KNOW THE TYPE OF OPERATION? OR CREATE THREAD ONCE THE CONNECTION IS ACCEPTED AND CHECK THE OPERATION IN EVERY THREAD??
+
+-DO WE REALLY NEED A CONDITION VARIABLE TO ACCESS THE LIST? IT SHOULD SUFFICE WITH A MUTEX
+
+-MAXIMUM NUMBER OF USERS?? MAXIMUM NUMBER OF PENDING MESSAGES??
+
+-IN WHICH CASES ARE WE SENDING THE CODE 2 (ERROR) TO THE CLIENT??
+

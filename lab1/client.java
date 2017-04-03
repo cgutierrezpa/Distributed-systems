@@ -42,7 +42,7 @@ class client {
 			Socket sc = new Socket(_server, _port);
 
 			DataOutputStream out = new DataOutputStream(sc.getOutputStream());
-			BufferedReader in = new BufferedReader(new InputStreamReader(sc.getInputStream()));
+			DataInputStream in = new DataInputStream(sc.getInputStream());
 
 			//2. The string "REGISTER" is sent indicating the operation
 			String operation = new String("REGISTER");
@@ -54,7 +54,9 @@ class client {
 			out.write('\0');
 
 			//4. Check response from the server. If 0, success; if 1 user is previously registered; if 2 other case
-			String response = in.readLine();
+			Byte response = in.readByte();
+
+			System.out.println("Response is: " + response);
 
 			//5. Close connection
 			sc.close();
@@ -63,13 +65,13 @@ class client {
 			
 			//Decode the response from the server
 			switch(response){
-				case "0":
+				case 0:
 					System.out.println("c> REGISTER OK");
 					return RC.OK;
-				case "1":
-					System.out.println("c> REGISTER IN USE");
+				case 1:
+					System.out.println("c> USERNAME IN USE");
 					return RC.USER_ERROR;
-				case "2":
+				case 2:
 					System.out.println("c> REGISTER FAIL");
 					return RC.ERROR;
 			}
@@ -79,7 +81,7 @@ class client {
 			System.out.println("Exception: " + e);
 			e.printStackTrace();
 		}
-
+		System.out.println("c> REGISTER FAIL");
 		return RC.ERROR;
 	}
 	
@@ -92,7 +94,54 @@ class client {
 	 */
 	static RC unregister(String user) 
 	{
-		// Write your code here
+		///////////////////////////////////////////////
+		///////////////     PROTOCOL    ///////////////
+		///////////////////////////////////////////////
+		try{
+			//1. Connect to the server, using the IP and port passed in the command line
+			Socket sc = new Socket(_server, _port);
+
+			DataOutputStream out = new DataOutputStream(sc.getOutputStream());
+			DataInputStream in = new DataInputStream(sc.getInputStream());
+
+			//2. The string "UNREGISTER" is sent indicating the operation
+			String operation = new String("UNREGISTER");
+			out.writeBytes(operation);
+			out.write('\0');			//Insert ASCII 0 at the end
+
+			//3. A string of characters is sent with the user to be unregistered
+			out.writeBytes(user);
+			out.write('\0');
+
+			//4. Check response from the server. If 0, success; if 1 user does not exist; if 2 other case
+			Byte response = in.readByte();
+
+			System.out.println("Response is: " + response);
+
+			//5. Close connection
+			sc.close();
+			out.close();
+			in.close();
+			
+			//Decode the response from the server
+			switch(response){
+				case 0:
+					System.out.println("c> UNREGISTER OK");
+					return RC.OK;
+				case 1:
+					System.out.println("c> USER DOES NOT EXIST");
+					return RC.USER_ERROR;
+				case 2:
+					System.out.println("c> UNREGISTER FAIL");
+					return RC.ERROR;
+			}
+
+		}
+		catch (java.io.IOException e) {
+			System.out.println("Exception: " + e);
+			e.printStackTrace();
+		}
+		System.out.println("c> UNREGISTER FAIL");
 		return RC.ERROR;
 	}
 	
@@ -105,7 +154,61 @@ class client {
 	 */
 	static RC connect(String user) 
 	{
-		// Write your code here
+		///////////////////////////////////////////////
+		///////////////     PROTOCOL    ///////////////
+		///////////////////////////////////////////////
+		try{
+			//1. Connect to the server, using the IP and port passed in the command line
+			Socket sc = new Socket(_server, _port);
+
+			DataOutputStream out = new DataOutputStream(sc.getOutputStream());
+			DataInputStream in = new DataInputStream(sc.getInputStream());
+
+			//2. The string "CONNECT" is sent indicating the operation
+			String operation = new String("CONNECT");
+			out.writeBytes(operation);
+			out.write('\0');			//Insert ASCII 0 at the end
+
+			//3. A string of characters is sent with the user to be connected
+			out.writeBytes(user);
+			out.write('\0');
+
+			//4. A string is sent with the port number listening in the client
+			out.writeBytes("400");
+			out.write('\0');
+
+			//4. Check response from the server. If 0, success; if 1 user does not exist; if 2 other case
+			Byte response = in.readByte();
+
+			System.out.println("Response is: " + response);
+
+			//5. Close connection
+			sc.close();
+			out.close();
+			in.close();
+			
+			//Decode the response from the server
+			switch(response){
+				case 0:
+					System.out.println("c> CONNECT OK");
+					return RC.OK;
+				case 1:
+					System.out.println("c> CONNECT FAIL, USER DOES NOT EXIST");
+					return RC.USER_ERROR;
+				case 2:
+					System.out.println("c> USER ALREADY CONNECTED");
+					return RC.USER_ERROR;
+				case 3:
+					System.out.println("c> CONNECT FAIL");
+					return RC.ERROR;
+			}
+
+		}
+		catch (java.io.IOException e) {
+			System.out.println("Exception: " + e);
+			e.printStackTrace();
+		}
+		System.out.println("c> CONNECT FAIL");
 		return RC.ERROR;
 	}
 	
@@ -119,7 +222,61 @@ class client {
 	 */
 	static RC disconnect(String user) 
 	{
-		// Write your code here
+		///////////////////////////////////////////////
+		///////////////     PROTOCOL    ///////////////
+		///////////////////////////////////////////////
+		try{
+			//1. Connect to the server, using the IP and port passed in the command line
+			Socket sc = new Socket(_server, _port);
+
+			DataOutputStream out = new DataOutputStream(sc.getOutputStream());
+			DataInputStream in = new DataInputStream(sc.getInputStream());
+
+			//2. The string "DISCONNECT" is sent indicating the operation
+			String operation = new String("DISCONNECT");
+			out.writeBytes(operation);
+			out.write('\0');			//Insert ASCII 0 at the end
+
+			//3. A string of characters is sent with the user to be connected
+			out.writeBytes(user);
+			out.write('\0');
+
+			//4. A string is sent with the port number listening in the client
+			out.writeBytes("400");
+			out.write('\0');
+
+			//4. Check response from the server. If 0, success; if 1 user does not exist; if 2 other case
+			Byte response = in.readByte();
+
+			System.out.println("Response is: " + response);
+
+			//5. Close connection
+			sc.close();
+			out.close();
+			in.close();
+			
+			//Decode the response from the server
+			switch(response){
+				case 0:
+					System.out.println("c> DISCONNECT OK");
+					return RC.OK;
+				case 1:
+					System.out.println("c> DISCONNECT FAIL / USER DOES NOT EXIST");
+					return RC.USER_ERROR;
+				case 2:
+					System.out.println("c> DISCONNECT FAIL / USER NOT CONNECTED");
+					return RC.USER_ERROR;
+				case 3:
+					System.out.println("c> DISCONNECT FAIL");
+					return RC.ERROR;
+			}
+
+		}
+		catch (java.io.IOException e) {
+			System.out.println("Exception: " + e);
+			e.printStackTrace();
+		}
+		System.out.println("c> DISCONNECT FAIL");
 		return RC.ERROR;
 	}
 
@@ -166,17 +323,7 @@ class client {
 					/********** UNREGISTER ************/
 					else if (line[0].equals("UNREGISTER")) {
 						if  (line.length == 2) {
-							switch(unregister(line[1])){ // userName = line[1]
-								case OK:
-									System.out.println("c> UNREGISTER OK");
-									break;
-								case USER_ERROR:
-									System.out.println("c> USER DOES NOT EXIST");
-									break;
-								case ERROR:
-									System.out.println("c> UNREGISTER FAIL");
-									break;
-							}
+							unregister(line[1]); // userName = line[1]
 						} else {
 							System.out.println("Syntax error. Usage: UNREGISTER <userName>");
 						}
@@ -185,20 +332,7 @@ class client {
                     /************ CONNECT *************/
                     else if (line[0].equals("CONNECT")) {
 						if  (line.length == 2) {
-							switch(connect(line[1])){ // userName = line[1] AQUI CREAMOS EL HILO SERVIDOR
-								case OK:
-									System.out.println("c> CONNECT OK");
-									break;
-								case USER_ERROR:
-									System.out.println("c> CONNECT FAIL, USER DOES NOT EXIST");
-									break;
-								case USER_CONNECT_ERROR:
-									System.out.println("c> USER ALREADY CONNECTED");
-									break;
-								case ERROR:
-									System.out.println("c> CONNECT FAIL");
-									break;
-							}
+							connect(line[1]); // userName = line[1] AQUI CREAMOS EL HILO SERVIDOR
 						} else {
 							System.out.println("Syntax error. Usage: CONNECT <userName>");
                     	}
@@ -213,8 +347,6 @@ class client {
 									break;
 								case USER_ERROR:
 									System.out.println("c> DISCONNECT FAIL / USER DOES NOT EXIST");
-									break;
-								case USER_CONNECT_ERROR:
 									System.out.println("c> DISCONNECT FAIL / USER NOT CONNECTED");
 									break;
 								case ERROR:

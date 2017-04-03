@@ -6,7 +6,7 @@
 #include "user_list.h"
 
  
- int isRegistered(char * username){
+char isRegistered(char * username){
     struct user *temp;
     temp = user_head;
 
@@ -22,16 +22,20 @@
  }
  
 /* Returns 1 if already registered; 0 if registered correctly */
-int registerUser(char * username){
+char registerUser(char * username){
     /* Check if the user already exists */
     if(isRegistered(username)) return 1;
 
+    /* Prepare new user */ 
     struct user *temp;
     temp = (struct user *) malloc(sizeof(struct user));
+    /* Initialize user values */
     strcpy(temp->username, username);
-
+    temp->status = 0;
+    temp->port = 0;
     temp->last_msg_id = 0;  //Initialize the last message ID to 0
     temp->pend_msgs_head = NULL;
+    temp->next = NULL;
 
     if (user_head == NULL){      //If list is empty
         temp->next = user_head;
@@ -39,18 +43,19 @@ int registerUser(char * username){
     }
     else{
         struct user *last = user_head;
+
+        /* Iterate over the list */
         while(last->next != NULL){
             last = last->next;
         }
         last->next = temp;
-        temp->next = NULL;
     }
 
     return 0;
 }
 
 /* Return 0 if disconnect OK; 1 if user is not registered; 2 if registered but not connected */
-int connectUser(char * username, uint16_t port){
+char connectUser(char * username, char * ip, uint16_t port){
     struct user *temp = user_head;
 
     /* Iterate over the list */
@@ -63,13 +68,17 @@ int connectUser(char * username, uint16_t port){
             temp->port = port;
             return 0;
         }
+        temp = temp->next;
     }
 
     return 1;
 }
 
-/* Return 0 if disconnect OK; 1 if user is not registered; 2 if registered but not connected */
-int disconnectUser(char * username){
+/* Return 0 if disconnect OK;
+     1 if user is not registered;
+     2 if registered but not connected;
+     3 if trying to disconnect from a different IP */
+char disconnectUser(char * username){
     struct user *temp = user_head;
 
     /* Iterate over the list */
@@ -82,6 +91,7 @@ int disconnectUser(char * username){
             free(&(temp->port));
             return 0;
         }
+        temp = temp->next;
     }
 
     return 1;
@@ -89,7 +99,7 @@ int disconnectUser(char * username){
  
 
 /* Returns 1 if the user does not exist. 0 if the user is deleted correctly */
-int unregisterUser(char * username){
+char unregisterUser(char * username){
     /* Check if the user is not registered */
     //if(!isRegistered(username)) return 1;
 
@@ -106,6 +116,7 @@ int unregisterUser(char * username){
             }
             else{                   //User is not at the user_head
             prev->next = temp->next;
+            /* Free the memory resources of the user structure */
             free(temp);
             return 0;
             }
@@ -181,3 +192,4 @@ void removePendMsg(char * username){
         temp = temp->next;
     }
 }
+

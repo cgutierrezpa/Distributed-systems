@@ -15,11 +15,11 @@ struct user{
     struct user *next;
 } *user_head;
 
-int isRegistered(char * username);
-int registerUser(char * username);
-int unregisterUser(char * username);
-int connectUser(char * username, uint16_t port);
-int disconnectUser(char * username);
+char isRegistered(char * username);
+char registerUser(char * username);
+char unregisterUser(char * username);
+char connectUser(char * username, char * ip, uint16_t port);
+char disconnectUser(char * username);
 void appendMsg(char * username, char* msg);
 unsigned int updateID(struct user *usr);
 void printPendMsgs(char * username);
