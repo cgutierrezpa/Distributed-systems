@@ -4,6 +4,7 @@
 #include <string.h>
 #include "msg_list.h"
 #include "user_list.h"
+
  
 char isRegistered(char * username){
     struct user *temp;
@@ -31,7 +32,6 @@ char registerUser(char * username){
     /* Initialize user values */
     strcpy(temp->username, username);
     temp->status = 0;
-    strcpy(temp->ip, "-1");
     temp->port = 0;
     temp->pend_msgs_head = NULL;
     temp->next = NULL;
@@ -68,7 +68,7 @@ char connectUser(char * username, char * ip, uint16_t port){
             if (temp->status == 1) return 2;        //User already connected       
             /* Change status to 1 ("ON") and update IP and Port */
             temp->status = 1;
-            strcpy(temp->ip, ip);
+            //Set IP
             temp->port = port;
             return 0;
         }
@@ -88,12 +88,12 @@ char disconnectUser(char * username, char * used_ip){
     /* Iterate over the list */
     while(temp != NULL){
         if(strcmp(temp->username, username) == 0){  //User found
-            if (temp->status == 0) return 2;        //User already disconnected
-            if(strcmp(temp->ip, used_ip) != 0) return 3; //Trying to disconnect from a different IP     
+            //if(strcmp(temp->ip, used_ip) != 0) return 3; //Trying to disconnect from a different IP
+            if (temp->status == 0) return 2;        //User already disconnected       
             /* Change status to 0 ("OFF") and delete IP and Port */
             temp->status = 0;
-            strcpy(temp->ip, "-1");
-            temp->port = 0;
+            //Free IP
+            free(&(temp->port));
             return 0;
         }
         temp = temp->next;
@@ -156,7 +156,7 @@ void appendMsg(char * username, char* msg){
     while(temp != NULL){
         if(strcmp(temp->username, username) == 0){  //User found
             //Enqueue message
-            enqueueMsg(&(temp->pend_msgs_head), msg, updateLastID());
+            enqueueMsg(&(temp->pend_msgs_head), msg, updateLastID(temp));
             return;     
         }
         temp = temp->next;

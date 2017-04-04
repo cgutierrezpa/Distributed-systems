@@ -172,7 +172,7 @@ class client {
 			//3. A string of characters is sent with the user to be connected
 			out.writeBytes(user);
 			out.write('\0');
-
+			ServerSocket 
 			//4. A string is sent with the port number listening in the client
 			out.writeBytes("400");
 			out.write('\0');
@@ -190,6 +190,7 @@ class client {
 			//Decode the response from the server
 			switch(response){
 				case 0:
+					/* Start a new thread where */
 					System.out.println("c> CONNECT OK");
 					return RC.OK;
 				case 1:
@@ -237,12 +238,8 @@ class client {
 			out.writeBytes(operation);
 			out.write('\0');			//Insert ASCII 0 at the end
 
-			//3. A string of characters is sent with the user to be connected
+			//3. A string of characters is sent with the user to be disconnected
 			out.writeBytes(user);
-			out.write('\0');
-
-			//4. A string is sent with the port number listening in the client
-			out.writeBytes("400");
 			out.write('\0');
 
 			//4. Check response from the server. If 0, success; if 1 user does not exist; if 2 other case
@@ -290,8 +287,86 @@ class client {
 	 */
 	static RC send(String user, String message) 
 	{
-		// Write your code here
+		///////////////////////////////////////////////
+		///////////////     PROTOCOL    ///////////////
+		///////////////////////////////////////////////
+		try{
+			//1. Connect to the server, using the IP and port passed in the command line
+			Socket sc = new Socket(_server, _port);
+
+			DataOutputStream out = new DataOutputStream(sc.getOutputStream());
+			DataInputStream in = new DataInputStream(sc.getInputStream());
+
+
+			//2. The string "SEND" is sent indicating the operation
+			String operation = new String("SEND");
+			out.writeBytes(operation);
+			out.write('\0');			//Insert ASCII 0 at the end
+
+			//3. A string of characters is sent with the user that sends the message
+			//out.writeBytes(connected_user);
+			out.write('\0');
+
+			//4. A string of characters is sent with the user that receives the message
+			out.writeBytes(user);
+			out.write('\0');
+
+			//5. A string of maximum 256 (including ASCII 0) characters is sent with the message to be sent
+			out.writeBytes(trimMessage(message)); //Sends a string of 255 characters
+			out.write('\0');
+
+			//6. Check response from the server. If 0, success; if 1 user does not exist; if 2 other case
+			Byte response = in.readByte();
+
+			System.out.println("Response is: " + response);
+
+			String msg_id = new String();
+			/* If response is 0 (OK), prepare to read the ID of the message */
+			if(response == 0){
+				/* Create  BufferedReader for easy reading a string */
+				BufferedReader inString = new BufferedReader(new InputStreamReader(sc.getInputStream()));
+				msg_id = inString.readLine();
+
+				//Close the BufferedReader
+				inString.close();
+			}
+
+			//7. Close connection
+			sc.close();
+			out.close();
+			in.close();
+
+			//Decode the response from the server
+			switch(response){
+				case 0:
+					System.out.println("c> SEND OK - MESSAGE " + msg_id);
+					return RC.OK;
+				case 1:
+					System.out.println("c> SEND FAIL / USER DOES NOT EXIST");
+					return RC.USER_ERROR;
+				case 2:
+					System.out.println("c> SEND FAIL");
+					return RC.ERROR;
+			}
+
+		}
+		catch (java.io.IOException e) {
+			System.out.println("Exception: " + e);
+			e.printStackTrace();
+		}
+		System.out.println("c> SEND FAIL");
 		return RC.ERROR;
+	}
+
+	static String trimMessage(String message){
+		/* Maximum length is of 255 characters because 1 character is reserved for ASCII 0 */
+		int maxLength = 255;
+
+		if(message.length() > maxLength){
+			message = message.substring(0, maxLength);
+		}
+
+		return message;
 	}
 	
 	/**
@@ -341,18 +416,7 @@ class client {
                     /********** DISCONNECT ************/
                     else if (line[0].equals("DISCONNECT")) {
 						if  (line.length == 2) {
-							switch(disconnect(line[1])){ // userName = line[1]
-								case OK:
-									System.out.println("c> DISCONNECT OK");
-									break;
-								case USER_ERROR:
-									System.out.println("c> DISCONNECT FAIL / USER DOES NOT EXIST");
-									System.out.println("c> DISCONNECT FAIL / USER NOT CONNECTED");
-									break;
-								case ERROR:
-									System.out.println("c> DISCONNECT FAIL");
-									break;
-							}
+							disconnect(line[1]); // userName = line[1]
 						} else {
 							System.out.println("Syntax error. Usage: DISCONNECT <userName>");
                     	}
@@ -450,7 +514,8 @@ class client {
 			return;
 		}
 		
-		// Write code here
+		//byte[] prueba = "heyeheyheyeh";
+		//System.out.println("Prueba: " + prueba);
 		
 		shell();
 		System.out.println("+++ FINISHED +++");

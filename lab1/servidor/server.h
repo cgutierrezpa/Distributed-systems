@@ -11,8 +11,10 @@ pthread_cond_t free_list;
 
 /* Variable that controls the state of the socket created by the connection 'accept' */
 int busy_socket;
+/* Variable that controls the if the list of users is being accessed */
+int busy_list;
 
-/* Declare the list of users */
+/* Initialize the list of users */
 struct user *users;
 
 void interruptHandler(int sig);

@@ -2,10 +2,15 @@
 #define TRUE 	1
 #define FALSE 	0
 
+/*
+struct pend_msg{
+    char pend_msg[MAX_MSG];
+    struct pend_msg *next;
+} *msg_head;*/
+
 struct user{
     char username[MAX_USERNAME];    /* Username that acts as ID */
     char status;                    /* Status of the client: 0 if "OFF"; 1 if "ON" */
-    char ip[16];	
     uint16_t port;
     struct msg *pend_msgs_head;
     struct user *next;

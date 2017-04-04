@@ -9,11 +9,12 @@
 
 int main(void){
     char line[MAX_MSG];
-    char ip [1];
+    char * ip;
+    ip = (char *) malloc(sizeof(char)*2);
     //ip = "DISCONNECT";
     strcpy(ip, "DISCONNECT");
     printf("String: %s\n", ip);
-    printf("Size: %d\n", sizeof(ip));
+    printf("Size: %d\n", sizeof(*ip));
 
     //struct user * user_head = (struct user *) malloc(sizeof(struct user));
     while(1){
