@@ -6,12 +6,14 @@
 
  
 /* Returns 1 if already registered; 0 if registered correctly */
-void enqueueMsg(struct msg **head, char * message, unsigned int id){
+void enqueueMsg(struct msg **head, char * message, unsigned int id, char * sender){
     struct msg *temp;
     //Allocate the space for the new message and 
     temp = (struct msg *) malloc(sizeof(struct msg));
     strcpy(temp->body, message);
+    strcpy(temp->sender, sender);
     temp->id = id;
+    temp->next = NULL;
 
     if (*head == NULL){      //If list is empty
         temp->next = *head;
@@ -19,11 +21,11 @@ void enqueueMsg(struct msg **head, char * message, unsigned int id){
     }
     else{
         struct msg *last = *head;
+        
         while(last->next != NULL){
             last = last->next;
         }
         last->next = temp;
-        temp->next = NULL;
     }
 }
 

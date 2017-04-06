@@ -35,13 +35,9 @@ char registerUser(char * username){
     temp->port = 0;
     temp->pend_msgs_head = NULL;
     temp->next = NULL;
+    temp->last_id = 0;
 
     if (user_head == NULL){      //If list is empty
-        /*Initialize the last assigned ID to a message if is the first user to register*/
-        if(first_user){
-            last_msg_id = 0;
-            first_user = FALSE;
-        } 
         temp->next = user_head;
         user_head = temp;
     }
@@ -149,14 +145,14 @@ void printUsers(){
     }
 }
 
-void appendMsg(char * username, char* msg){
+void storeMsg(char * username, char* msg, unsigned int msg_id, char * sender){
     struct user *temp = user_head;
 
     /* Iterate over the list */
     while(temp != NULL){
         if(strcmp(temp->username, username) == 0){  //User found
             //Enqueue message
-            enqueueMsg(&(temp->pend_msgs_head), msg, updateLastID());
+            enqueueMsg(&(temp->pend_msgs_head), msg, msg_id, sender);
             return;     
         }
         temp = temp->next;
@@ -165,13 +161,23 @@ void appendMsg(char * username, char* msg){
     return;
 }
 
-unsigned int updateLastID(){
-    //Increment the ID in 1
-    last_msg_id = last_msg_id+1;
-    //If it results in 0, then the maximum representable number is overflown
-    if(last_msg_id == 0) last_msg_id = 1;
+unsigned int updateLastID(char * username){
+    struct user *temp = user_head;
 
-    return last_msg_id;
+    /* Iterate over the list */
+    while(temp != NULL){
+        if(strcmp(temp->username, username) == 0){  //User found
+            //Increment the ID in 1
+            temp->last_id = temp->last_id+1;
+            //If it results in 0, then the maximum representable number is overflown
+            if(temp->last_id == 0) temp->last_id = 1;
+
+            return temp->last_id;     
+        }
+        temp = temp->next;
+    }
+
+    return 0;
 }
 
 void printPendMsgs(char * username){
@@ -197,4 +203,42 @@ void removePendMsg(char * username){
         temp = temp->next;
     }
 }
+
+char isConnected(char * username){
+    struct user *temp = user_head;
+    /* Iterate over the list */
+    while(temp != NULL){
+        if(strcmp(temp->username, username) == 0){  //User found
+            return temp->status;     //Returns 0 if OFF, 1 if ON
+        }
+        temp = temp->next;
+    }
+    /* Return error 2 if we reach this point. No user was found */
+    return 2;
+}
+
+char * getUserIP(char * username){
+    struct user *temp = user_head;
+    /* Iterate over the list */
+    while(temp != NULL){
+        if(strcmp(temp->username, username) == 0){  //User found
+            return temp->ip;     //Returns the IP of the user
+        }
+        temp = temp->next;
+    }
+    return NULL;
+}
+
+uint16_t getUserPort(char * username){
+    struct user *temp = user_head;
+    /* Iterate over the list */
+    while(temp != NULL){
+        if(strcmp(temp->username, username) == 0){  //User found
+            return temp->port;     //Returns the IP of the user
+        }
+        temp = temp->next;
+    }
+    return 0;
+}
+
 

@@ -9,18 +9,19 @@ struct user{
     uint16_t port;
     struct msg *pend_msgs_head;
     struct user *next;
+    unsigned int last_id;
 } *user_head;
-
-int first_user;
-
 
 char isRegistered(char * username);
 char registerUser(char * username);
 char unregisterUser(char * username);
 char connectUser(char * username, char * ip, uint16_t port);
 char disconnectUser(char * username, char * used_ip);
-void appendMsg(char * username, char* msg);
-unsigned int updateLastID();
+void storeMsg(char * username, char* msg, unsigned int msg_id, char * sender);
+unsigned int updateLastID(char * username);
 void printPendMsgs(char * username);
 void printUsers();
 void removePendMsg(char * username);
+char isConnected(char * username);
+char * getUserIP(char * username);
+uint16_t getUserPort(char * username);

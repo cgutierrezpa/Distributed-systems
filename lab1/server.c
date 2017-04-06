@@ -27,8 +27,6 @@ int main(int argc, char * argv[]){
 	int val;
 	int server_port;
 	struct hostent *hp;
-	/* Set the variable that controls the first user registered in the system */
-	first_user = TRUE; 
 
 
 	/* Check command */
@@ -146,7 +144,7 @@ int main(int argc, char * argv[]){
 
 void * manageRequest(int *sd){
 	int s_local;
-	char operation_buff[MAX_OP];
+	char operation_buff[MAX_COMMAND];
 	char user_buff[MAX_USERNAME];
 	char msg_buff[MAX_MSG];
 	int n;
@@ -161,7 +159,7 @@ void * manageRequest(int *sd){
 	pthread_mutex_unlock(&socket_mtx);
 
 	/* Read the operation */
-	n = readLine(s_local, operation_buff, MAX_OP);
+	n = readLine(s_local, operation_buff, MAX_COMMAND);
 	if(n == -1){
 		perror("[SERVER_THREAD]: Error when reading from the socket");
 		close(s_local);
@@ -217,25 +215,6 @@ void * manageRequest(int *sd){
 			goto respond_to_client;
 			//Send error 2 to client and close socket
 		}
-		/*
-		char client_ip[16];
-		inet_ntop(AF_INET, &client_addr_local.sin_addr, client_ip, sizeof(client_ip));
-		*/
-		/*
-		struct in_addr in;
-		
-		hp = gethostbyaddr((char*) &client_addr_local, sizeof(&addr_len), AF_INET);
-
-		char **p;
-	
-		for (p = hp->h_addr_list; *p != 0; p++){
-			memcpy(&in.s_addr, *p, sizeof(in.s_addr));
-			printf("List: %s\t%s\n", inet_ntoa(in), hp->h_name);
-		}
-		*/
-
-
-		//client_port = client_addr_local.sin_port;
 
 		printf("\nIP OF THE CLIENT: %s", inet_ntoa(client_addr_local.sin_addr));
 		printf("\nPORT NUMBER OF THE CLIENT: %d\n", client_port);
@@ -262,7 +241,168 @@ void * manageRequest(int *sd){
 		pthread_mutex_unlock(&users_list_mtx);
 	}
 	else if(strcmp(operation_buff, "SEND") == 0){
-		//LOGIC OF THE SEND
+		char dest_user_buff[MAX_USERNAME];
+		//int client_socket;
+		printf("Receive sender: %s\n", user_buff);
+
+		m = readLine(s_local, dest_user_buff, MAX_USERNAME);
+		if(m == -1){
+			perror("[SERVER_THREAD]: Error when reading from the socket\n");
+			close(s_local);
+			//close socket in father
+			exit(-1);
+		}
+		toUpperCase(dest_user_buff);
+		printf("Receive receiver: %s\n", dest_user_buff);
+
+		n = readLine(s_local, msg_buff, MAX_MSG);
+		if(m == -1){
+			perror("[SERVER_THREAD]: Error when reading from the socket\n");
+			close(s_local);
+			//close socket in father
+			exit(-1);
+		}
+		printf("Receive message: %s\n", msg_buff);
+		
+		/* Check if one of the two users is not registered */
+		pthread_mutex_lock(&users_list_mtx);
+		if(!isRegistered(user_buff) || !isRegistered(dest_user_buff)){
+			pthread_mutex_unlock(&users_list_mtx);
+			out = 1; //Send code 1 to the client
+			goto respond_to_client;
+		}
+		pthread_mutex_unlock(&users_list_mtx);
+
+		/* Check the status of the destination user */
+		pthread_mutex_lock(&users_list_mtx);
+		char status = isConnected(dest_user_buff);
+		unsigned int last_id = updateLastID(user_buff); //Update the last id of the sender message
+		pthread_mutex_unlock(&users_list_mtx);
+		printf("Last ID is: %d\n", last_id);
+		printf("Status is: %d\n", status);
+		if(status == 0){ //Not connected
+				/* Store the message */
+				pthread_mutex_lock(&users_list_mtx);
+				storeMsg(dest_user_buff, msg_buff, last_id, user_buff);
+				pthread_mutex_unlock(&users_list_mtx);
+				
+				fprintf(stderr, "MESSAGE %d FROM %s TO %s STORED", last_id,
+													 user_buff, dest_user_buff);
+				fprintf(stderr, "\n%s", "s> ");	/* Prompt */
+
+				out = 0;
+				send_msg(s_local, &out, sizeof(out));
+
+				char id_string[11];
+				sprintf(id_string, "%d", last_id);
+				send_msg(s_local, id_string, sizeof(id_string));
+
+				goto destroy_thread;
+		}else if(status == 1){
+				/* Open 2 connections. One for the destination user to send the message
+				and another for the origin user to acknowledge that the message has been
+				sent successfully */
+				int s_origin_client, s_dest_client;
+				struct sockaddr_in origin_addr, dest_addr;
+				struct hostent *origin_hp, *dest_hp;
+
+				s_dest_client = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+				if(s_dest_client == -1){
+					out = 2;
+					send_msg(s_local, &out, sizeof(out));
+					goto destroy_thread;
+				}
+
+				bzero((char *) &dest_addr, sizeof(dest_addr));
+
+				pthread_mutex_lock(&users_list_mtx);
+				dest_hp = gethostbyname(getUserIP(dest_user_buff));
+				pthread_mutex_unlock(&users_list_mtx);
+
+				memcpy(&(dest_addr.sin_addr), dest_hp->h_addr, dest_hp->h_length);
+				dest_addr.sin_family = AF_INET;
+				pthread_mutex_lock(&users_list_mtx);
+				dest_addr.sin_port = htons(getUserPort(dest_user_buff));
+				pthread_mutex_unlock(&users_list_mtx);
+
+				if (connect(s_dest_client, (struct sockaddr *) &dest_addr, sizeof(dest_addr)) == -1){
+					/* If the connection with the receiver fails, assume the client 
+					to be disconnected, disconnect it and store the message */
+					pthread_mutex_lock(&users_list_mtx);
+					disconnectUser(dest_user_buff, getUserIP(dest_user_buff)); // No need to check for output
+					storeMsg(dest_user_buff, msg_buff, last_id, user_buff);
+					pthread_mutex_unlock(&users_list_mtx);
+
+					fprintf(stderr, "MESSAGE %d FROM %s TO %s STORED", last_id,
+													 user_buff, dest_user_buff);
+					fprintf(stderr, "\n%s", "s> ");	/* Prompt */
+
+					out = 0;
+					send_msg(s_local, &out, sizeof(out));
+
+					char id_string[11];
+					sprintf(id_string, "%d", last_id);
+					send_msg(s_local, id_string, sizeof(id_string));
+					goto destroy_thread;
+				}
+
+				char op[13];
+				strcpy(op, "SEND_MESSAGE");
+
+				send_msg(s_dest_client, op, sizeof(op));
+				send_msg(s_dest_client, user_buff, MAX_USERNAME);
+				/* Send the identifier of the message */
+				char id_string[11];
+				sprintf(id_string, "%d", last_id);
+				printf("ID STRING AFTER CONVERSION IS: %s\n", id_string);
+				send_msg(s_dest_client, id_string, sizeof(id_string));
+				send_msg(s_dest_client, msg_buff, MAX_MSG);
+
+				close(s_dest_client);
+
+				/*IF NO ERRORS, SEND ACK BACK TO SENDER*/
+				fprintf(stderr, "SEND MESSAGE %d FROM %s TO %s", last_id,
+													 user_buff, dest_user_buff);
+				fprintf(stderr, "\n%s", "s> ");	/* Prompt */
+
+				out = 0;
+				send_msg(s_local, &out, sizeof(out));
+
+				//sprintf(id_string, "%d", last_id);
+				send_msg(s_local, id_string, sizeof(id_string));
+
+				s_origin_client = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+				//CHECK FOR ERROR AND SEND ERROR TO CLIENT
+
+				char ack_op[17];
+				strcpy(ack_op, "SEND_MESS_ACK");
+
+				bzero((char *) &origin_addr, sizeof(origin_addr));
+
+				pthread_mutex_lock(&users_list_mtx);
+				origin_hp = gethostbyname(getUserIP(user_buff));
+				pthread_mutex_unlock(&users_list_mtx);
+				memcpy(&(origin_addr.sin_addr), origin_hp->h_addr, origin_hp->h_length);
+				origin_addr.sin_family = AF_INET;
+				pthread_mutex_lock(&users_list_mtx);
+				origin_addr.sin_port = htons(getUserPort(user_buff));
+				pthread_mutex_unlock(&users_list_mtx);
+
+				connect(s_origin_client, (struct sockaddr *) &origin_addr, sizeof(origin_addr));
+				int s = send_msg(s_origin_client, ack_op, sizeof(ack_op));
+				printf("Number of bytes sent ack_op: %d\n", s);
+				s = send_msg(s_origin_client, id_string, sizeof(id_string));
+				printf("Number of bytes sent id_string: %d\n", s);
+
+				close(s_origin_client);
+				goto destroy_thread;
+		}
+
+		char prueba[11];
+		strcpy(prueba,"4294967295");
+		out = 0;
+		send_msg(s_local, &out, sizeof(out));
+		send_msg(s_local, prueba, sizeof(prueba));
 
 		/* As the print is different format is different from the other commands
 		it is performed in this section and the default print is skipped */
@@ -274,28 +414,6 @@ void * manageRequest(int *sd){
 				//FAIL
 				break;
 		}
-
-		m = readLine(s_local, user_buff, MAX_USERNAME);
-		if(m == -1){
-			perror("[SERVER_THREAD]: Error when reading from the socket\n");
-			close(s_local);
-			//close socket in father
-			exit(-1);
-		}
-
-		m = readLine(s_local, msg_buff, MAX_MSG);
-		if(m == -1){
-			perror("[SERVER_THREAD]: Error when reading from the socket\n");
-			close(s_local);
-			//close socket in father
-			exit(-1);
-		}
-		toUpperCase(user_buff);
-		char prueba[11];
-		strcpy(prueba,"4294967295");
-		out = 0;
-		send_msg(s_local, &out, sizeof(out));
-		send_msg(s_local, prueba, sizeof(prueba));
 
 		goto destroy_thread; //Skips the default print below
 	}
@@ -330,10 +448,13 @@ void * manageRequest(int *sd){
 		send_msg(s_local, &out, sizeof(out));
 
 	destroy_thread:
+	printf("COMPROBANDO CHECKPOINT 4\n");
 	if(close(s_local) == -1){
 		perror("[SERVER_THREAD]: Error when closing the socket in the thread");
 		exit(-1);
 	}
+	printf("COMPROBANDO CHECKPOINT 1\n");
+	printf("Destroying thread...!\n");
 	pthread_exit(NULL);
 }
 

@@ -9,12 +9,6 @@
 
 int main(void){
     char line[MAX_MSG];
-    char * ip;
-    ip = (char *) malloc(sizeof(char)*2);
-    //ip = "DISCONNECT";
-    strcpy(ip, "DISCONNECT");
-    printf("String: %s\n", ip);
-    printf("Size: %d\n", sizeof(*ip));
 
     //struct user * user_head = (struct user *) malloc(sizeof(struct user));
     while(1){
@@ -60,7 +54,7 @@ int main(void){
         	char msg[MAX_MSG];
         	strcpy(msg, line);
         	printf("Going to send to %s the msg %s", user, msg);
-        	appendMsg(user, msg);
+        	//appendMsg(user, msg);
         	printPendMsgs(user);
         }
         else if(strcmp(line, "6") == 0){

@@ -1,4 +1,4 @@
-#define MAX_OP 	11
+#define MAX_COMMAND 	11
 
 /* Mutex & Threads */
 pthread_mutex_t socket_mtx;
