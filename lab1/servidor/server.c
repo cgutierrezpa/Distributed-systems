@@ -49,7 +49,7 @@ int main(int argc, char * argv[]){
         perror("[SERVER]: Error when initializing the mutex");
         exit(-1);
     }
-    if(pthread_mutex_init(&users_list_mtx, NULL) != 0) {
+    if(pthread_mutex_init(&list_mtx, NULL) != 0) {
         perror("[SERVER]: Error when initializing the mutex");
         exit(-1);
     }
@@ -183,18 +183,18 @@ void * manageRequest(int *sd){
 	/* Check the operation */
 	if (strcmp(operation_buff, "REGISTER") == 0){
 		/* Register the user */
-		pthread_mutex_lock(&users_list_mtx);
+		pthread_mutex_lock(&list_mtx);
 		//////////////////////////////////////////////////////
 		/*                      DOUBT                       */
 		//////////////////////////////////////////////////////
 		/* Wait while the list of users is being accessed */
 		/*
 		while(free_list == TRUE)
-			pthread_cond_wait(&free_list, &users_list_mtx);
+			pthread_cond_wait(&free_list, &list_mtx);
 		free_list = TRUE;
 		*/
 		out = registerUser(user_buff);
-		pthread_mutex_unlock(&users_list_mtx);
+		pthread_mutex_unlock(&list_mtx);
 		/*
 		switch(result){
 			case 0:
@@ -209,18 +209,18 @@ void * manageRequest(int *sd){
 	}
 	else if (strcmp(operation_buff, "UNREGISTER") == 0){
 		/* Unregister the user */
-		pthread_mutex_lock(&users_list_mtx);
+		pthread_mutex_lock(&list_mtx);
 		//////////////////////////////////////////////////////
 		/*                      DOUBT                       */
 		//////////////////////////////////////////////////////
 		/* Wait while the list of users is being accessed */
 		/*
 		while(free_list == TRUE)
-			pthread_cond_wait(&free_list, &users_list_mtx);
+			pthread_cond_wait(&free_list, &list_mtx);
 		free_list = TRUE;
 		*/
 		out = unregisterUser(user_buff);
-		pthread_mutex_unlock(&users_list_mtx);
+		pthread_mutex_unlock(&list_mtx);
 		/*switch(result){
 			case 0:
 				out = '0';
@@ -264,15 +264,15 @@ void * manageRequest(int *sd){
 
 		printf("\nPORT NUMBER OF THE CLIENT: %d\n", client_port);
 
-		pthread_mutex_lock(&users_list_mtx);
+		pthread_mutex_lock(&list_mtx);
 		out = connectUser(user_buff, msg_buff, client_port);
-		pthread_mutex_unlock(&users_list_mtx);
+		pthread_mutex_unlock(&list_mtx);
 	
 	}/*
 	else if(strcmp(operation_buff, "DISCONNECT") == 0){
-		pthread_mutex_lock(&users_list_mtx);
+		pthread_mutex_lock(&list_mtx);
 		out = disconnectUser(user_buff);
-		pthread_mutex_unlock(&users_list_mtx);
+		pthread_mutex_unlock(&list_mtx);
 	}*/
 
 

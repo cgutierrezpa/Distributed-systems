@@ -52,16 +52,14 @@ class client {
 			//2. The string "REGISTER" is sent indicating the operation
 			String operation = new String("REGISTER");
 			out.writeBytes(operation);
-			out.write('\0');			//Insert ASCII 0 at the end
+			out.write(0);			//Insert ASCII 0 at the end
 
 			//3. A string of characters is sent with the user to be registered
 			out.writeBytes(user);
-			out.write('\0');
+			out.write(0);
 
 			//4. Check response from the server. If 0, success; if 1 user is previously registered; if 2 other case
 			byte response = in.readByte();
-
-			System.out.println("Response is: " + response);
 
 			//5. Close connection
 			sc.close();
@@ -112,16 +110,14 @@ class client {
 			//2. The string "UNREGISTER" is sent indicating the operation
 			String operation = new String("UNREGISTER");
 			out.writeBytes(operation);
-			out.write('\0');			//Insert ASCII 0 at the end
+			out.write(0);			//Insert ASCII 0 at the end
 
 			//3. A string of characters is sent with the user to be unregistered
 			out.writeBytes(user);
-			out.write('\0');
+			out.write(0);
 
 			//4. Check response from the server. If 0, success; if 1 user does not exist; if 2 other case
 			byte response = in.readByte();
-
-			System.out.println("Response is: " + response);
 
 			//5. Close connection
 			sc.close();
@@ -193,11 +189,11 @@ class client {
 			//2. The string "CONNECT" is sent indicating the operation
 			String operation = new String("CONNECT");
 			out.writeBytes(operation);
-			out.write('\0');			//Insert ASCII 0 at the end
+			out.write(0);			//Insert ASCII 0 at the end
 
 			//3. A string of characters is sent with the user to be connected
 			out.writeBytes(user);
-			out.write('\0');
+			out.write(0);
 
 			/* Create ServerSocket. We provide 0 to assign any available port number and 10 as maximum
 			number of queued requests */
@@ -205,16 +201,12 @@ class client {
 			/* Get the port at which the socket is listening */
 			int port = sock.getLocalPort();
 
-			System.out.println("Asigned port number: " + port);
-
 			//4. A string is sent with the port number listening in the client
 			out.writeBytes(String.valueOf(port));
-			out.write('\0');
+			out.write(0);
 
 			//5. Check response from the server. If 0, success; if 1 user does not exist; if 2 other case
 			byte response = in.readByte();
-
-			System.out.println("Response is: " + response);
 
 			//6. Close connection
 			sc.close();
@@ -264,16 +256,6 @@ class client {
 		///////////////     PROTOCOL    ///////////////
 		///////////////////////////////////////////////
 		try{
-			/* Check if is trying to disconnect a user that is not connected. Exit with RC.ERROR if it does */
-			if(connected_user != null){
-				/* This protects against null pointer exception when a CONNECT command is executed and
-					the server marks the user as connected, but then the client is terminated without 
-					executing DISCONNECT from the server */
-				if(!connected_user.equals(user)){
-					System.out.println("c> DISCONNECT FAIL");
-					return RC.ERROR;
-				}
-			}
 
 			//1. Connect to the server, using the IP and port passed in the command line
 			Socket sc = new Socket(_server, _port);
@@ -284,16 +266,14 @@ class client {
 			//2. The string "DISCONNECT" is sent indicating the operation
 			String operation = new String("DISCONNECT");
 			out.writeBytes(operation);
-			out.write('\0');			//Insert ASCII 0 at the end
+			out.write(0);			//Insert ASCII 0 at the end
 
 			//3. A string of characters is sent with the user to be disconnected
 			out.writeBytes(user);
-			out.write('\0');
+			out.write(0);
 
 			//4. Check response from the server. If 0, success; if 1 user does not exist; if 2 other case
 			byte response = in.readByte();
-
-			System.out.println("Response is: " + response);
 
 			//5. Close connection
 			sc.close();
@@ -315,6 +295,8 @@ class client {
 					System.out.println("c> DISCONNECT FAIL / USER NOT CONNECTED");
 					return RC.USER_ERROR;
 				case 3:
+					/* In case of error in the disconnection process, stop the execution of the thread */
+					server_thread.kill();
 					System.out.println("c> DISCONNECT FAIL");
 					return RC.ERROR;
 			}
@@ -324,6 +306,8 @@ class client {
 			System.out.println("Exception: " + e);
 			e.printStackTrace();
 		}
+		/* In case of error in the disconnection process, stop the execution of the thread */
+		server_thread.kill();
 		System.out.println("c> DISCONNECT FAIL");
 		return RC.ERROR;
 	}
@@ -357,28 +341,23 @@ class client {
 			//2. The string "SEND" is sent indicating the operation
 			String operation = new String("SEND");
 			out.writeBytes(operation);
-			out.write('\0');			//Insert ASCII 0 at the end
+			out.write(0);			//Insert ASCII 0 at the end
 
 			//3. A string of characters is sent with the user that sends the message
 			out.writeBytes(connected_user);
-			out.write('\0');
+			out.write(0);
 
 			//4. A string of characters is sent with the user that receives the message
 			System.out.println("Usuario es: " + user);
 			out.writeBytes(user);
-			out.write('\0');
+			out.write(0);
 
 			//5. A string of maximum 256 (including ASCII 0) characters is sent with the message to be sent
-			
-			System.out.println("Mensaje es: " + message);
-			System.out.println("Mensaje cortado es: " + trimMessage(message));
 			out.writeBytes(trimMessage(message)); //Sends a string of 255 characters
-			out.write('\0');
+			out.write(0);
 
 			//6. Check response from the server. If 0, success; if 1 user does not exist; if 2 other case
 			byte response = in.readByte();
-
-			System.out.println("Response is: " + response);
 
 			String msg_id = new String();
 			/* If response is 0 (OK), prepare to read the ID of the message */
@@ -389,10 +368,10 @@ class client {
 				BufferedReader inString = new BufferedReader(new InputStreamReader(sc.getInputStream()));
 				msg_id = inString.readLine();*/
 				byte ch;
-
-				while ((ch = in.readByte()) != 0){
-					msg_id = msg_id + ((char)ch);
-				}
+				do{
+					ch = in.readByte();
+					if (ch != 0) msg_id = msg_id + ((char) ch);
+				} while(ch != 0);
 			}
 
 			//7. Close connection
@@ -579,13 +558,15 @@ class client {
 			return;
 		}
 
-		char a = '0';
-		System.out.println("a: " + a);
-		byte b = (byte) a;
-		System.out.println("b: " + b);
-		char c = (char) b;
-		boolean t = c == '\0';
-		System.out.println("Equal? " + t);
+		/* Creates a thread that catches Ctrl+C kill command from the CLI and disconnects from the server the 
+		connected user of the client (bound to the client) */
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+		    public void run() {
+		    	if(connected_user != null){
+		    		disconnect(connected_user);
+		    	}
+		    }
+ 		});
 		
 		shell();
 		System.out.println("+++ FINISHED +++");
@@ -610,7 +591,6 @@ class ServerThread extends Thread{
 	 */ 
 	public void kill(){
 		blinker = null;
-		System.out.println("Server thread is dying... :(");
 	}
 
 	/**
@@ -636,7 +616,6 @@ class ServerThread extends Thread{
 					
 				} while(ch != 0);
 
-				System.out.println("[SERVER_THREAD] - RECEIVED COMMAND: " + operation);
 				String id = new String();
 
 				switch(operation){
@@ -647,28 +626,33 @@ class ServerThread extends Thread{
 							if (ch != 0) sender = sender + ((char) ch);
 							
 						} while(ch != 0);
+
 						do{
 							ch = msg_in.readByte();
 							if (ch != 0) id = id + ((char) ch);
 						} while(ch != 0);
+
 						String msg = new String();
 						do{
 							ch = msg_in.readByte();
 							if (ch != 0) msg = msg + ((char) ch);
 							
 						} while(ch != 0);
+
 						System.out.println("MESSAGE " + id + " FROM " + sender + ":");
 						System.out.println("\t" + msg);
 						System.out.println("END");
+						System.out.print("c> ");
 						break;
 
 					case "SEND_MESS_ACK":
 						do{
 							ch = msg_in.readByte();
-							if (ch != 0) break;
-							id = id + ((char) ch);
+							if (ch != 0) id = id + ((char) ch);
 						} while(ch != 0);
+
 						System.out.println("SEND MESSAGE " + id + " OK");
+						System.out.print("c> ");
 						break;
 				}
 				sd.close();

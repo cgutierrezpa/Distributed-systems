@@ -112,11 +112,15 @@ char unregisterUser(char * username){
         if(strcmp(temp->username, username) == 0){  //User found
             if(temp == user_head){       //If the user is at the user_head of the list
                 user_head = temp->next;  //change the user_head to the next element
+                /* Delete the pending messages if any */
+                deleteAllMsgs(&(temp->pend_msgs_head));
                 free(temp);         //Free the resources of the user
                 return 0;
             }
             else{                   //User is not at the user_head
             prev->next = temp->next;
+            /* Delete the pending messages if any */
+            deleteAllMsgs(&(temp->pend_msgs_head));
             /* Free the memory resources of the user structure */
             free(temp);
             return 0;
@@ -144,21 +148,21 @@ void printUsers(){
         printf("\n");
     }
 }
-
-void storeMsg(char * username, char* msg, unsigned int msg_id, char * sender){
+/* Returns 0 if store OK. -1 if server error (malloc error because of full memory) */
+int storeMsg(char * username, char* msg, unsigned int msg_id, char * sender){
     struct user *temp = user_head;
 
     /* Iterate over the list */
     while(temp != NULL){
         if(strcmp(temp->username, username) == 0){  //User found
+            printf("Hemos encontrado el usuario, ahora metemos el mensaje\n");
             //Enqueue message
-            enqueueMsg(&(temp->pend_msgs_head), msg, msg_id, sender);
-            return;     
+            return enqueueMsg(&(temp->pend_msgs_head), msg, msg_id, sender);    
         }
         temp = temp->next;
     }
 
-    return;
+    return -1; //User was not found
 }
 
 unsigned int updateLastID(char * username){
@@ -241,4 +245,15 @@ uint16_t getUserPort(char * username){
     return 0;
 }
 
+struct msg ** getPendMsgHead(char * username){
+    struct user *temp = user_head;
+    /* Iterate over the list */
+    while(temp != NULL){
+        if(strcmp(temp->username, username) == 0){  //User found
+            return &(temp->pend_msgs_head);     //Returns the IP of the user
+        }
+        temp = temp->next;
+    }
+    return NULL;
+}
 

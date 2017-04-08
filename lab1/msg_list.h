@@ -7,8 +7,9 @@ struct msg{
     struct msg *next;
 };
 
-unsigned int last_msg_id;
-
-void enqueueMsg(struct msg **head, char * message, unsigned int id, char * sender);
+int enqueueMsg(struct msg **head, char * message, unsigned int id, char * sender);
+void deleteAllMsgs(struct msg ** head);
 void removeMsg(struct msg ** head);
 void printMsgs(struct msg ** head);
+struct msg * dequeueMsg(struct msg **head);
+

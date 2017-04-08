@@ -22,26 +22,6 @@ int send_msg(int socket, char *message, int length)
 		return(0);	/* success */
 }
 
-int recv_msg(int socket, char *message, int length)
-{
-	int r;
-	int l = length;
-		
-
-	do {	
-		r = recv(socket, message, l, 0);
-		l = l -r ;	/* Pending data to receive */
-		message = message + r;
-	} while ((l>0) && (r>=0)); /* We check the return value in case all the data was not received */
-	
-	if (r < 0)
-		return (-1);   /* fail */
-	else
-		return(0);	/* success */
-}
-
-
-
 ssize_t readLine(int fd, void *buffer, size_t n)
 {
 	ssize_t numRead;  /* num of bytes fetched by last read() */
