@@ -4,7 +4,10 @@
 #include <string.h>
 #include "msg_list.h"
 #include "user_list.h"
- 
+
+/* Checks if the input user is already registered
+    Return 0 if is registered
+        1 if is not registered */
 char isRegistered(char * username){
     struct user *temp;
     temp = user_head;
@@ -20,7 +23,9 @@ char isRegistered(char * username){
     return 0;
  }
  
-/* Returns 1 if already registered; 0 if registered correctly */
+/* Registers a user (if not previously registered) and appends it to the end of the s list
+    Returns 1 if already registered 
+        0 if registered correctly */
 char registerUser(char * username){
     /* Check if the user already exists */
     if(isRegistered(username)) return 1;
@@ -28,6 +33,8 @@ char registerUser(char * username){
     /* Prepare new user */ 
     struct user *temp;
     temp = (struct user *) malloc(sizeof(struct user));
+    /* If memory is full and malloc is not possible, we return code 2 */
+    if(temp == NULL) return 2;
     /* Initialize user values */
     strcpy(temp->username, username);
     temp->status = 0;
@@ -54,7 +61,10 @@ char registerUser(char * username){
     return 0;
 }
 
-/* Return 0 if connect OK; 1 if user is not registered; 2 if registered but not connected */
+/* Changes the status of a user to 1 (ON) and links an IP and port number to it
+    Return 0 if connect OK
+        1 if user is not registered
+        2 if registered but not connected */
 char connectUser(char * username, char * ip, uint16_t port){
     struct user *temp = user_head;
 
@@ -70,14 +80,15 @@ char connectUser(char * username, char * ip, uint16_t port){
         }
         temp = temp->next;
     }
-
+    /* No user was found, so send code 1 */
     return 1;
 }
 
-/* Return 0 if disconnect OK;
-     1 if user is not registered;
-     2 if registered but not connected;
-     3 if trying to disconnect from a different IP */
+/* Changes the status of a user to 0 (OFF) and cleans the IP and port number
+    Return 0 if disconnect OK;
+        1 if user is not registered;
+        2 if registered but not connected;
+        3 if trying to disconnect from a different IP */
 char disconnectUser(char * username, char * used_ip){
     struct user *temp = user_head;
 
@@ -99,11 +110,10 @@ char disconnectUser(char * username, char * used_ip){
 }
  
 
-/* Returns 1 if the user does not exist. 0 if the user is deleted correctly */
+/* Unregisters a user, deleting it and its pending messages (if any) from the list
+    Returns 1 if the user does not exist.
+        0 if the user is deleted correctly */
 char unregisterUser(char * username){
-    /* Check if the user is not registered */
-    //if(!isRegistered(username)) return 1;
-
     struct user *temp, *prev; //temp is the current user, prev is the previous user in the list
     temp = user_head;
 
@@ -118,12 +128,12 @@ char unregisterUser(char * username){
                 return 0;
             }
             else{                   //User is not at the user_head
-            prev->next = temp->next;
-            /* Delete the pending messages if any */
-            deleteAllMsgs(&(temp->pend_msgs_head));
-            /* Free the memory resources of the user structure */
-            free(temp);
-            return 0;
+                prev->next = temp->next;
+                /* Delete the pending messages if any */
+                deleteAllMsgs(&(temp->pend_msgs_head));
+                /* Free the memory resources of the user structure */
+                free(temp);
+                return 0;
             }
         }
         else{
@@ -134,20 +144,7 @@ char unregisterUser(char * username){
     //If we reach this point, no user was found
     return 1;
 }
- 
 
-void printUsers(){
-    struct user *temp;
-    temp = user_head;
-    if(temp == NULL){
-        return;
-    }
-    while(temp != NULL){
-        printf("%s ", temp->username);
-        temp = temp->next;
-        printf("\n");
-    }
-}
 /* Returns 0 if store OK. -1 if server error (malloc error because of full memory) */
 int storeMsg(char * username, char* msg, unsigned int msg_id, char * sender){
     struct user *temp = user_head;
@@ -155,7 +152,6 @@ int storeMsg(char * username, char* msg, unsigned int msg_id, char * sender){
     /* Iterate over the list */
     while(temp != NULL){
         if(strcmp(temp->username, username) == 0){  //User found
-            printf("Hemos encontrado el usuario, ahora metemos el mensaje\n");
             //Enqueue message
             return enqueueMsg(&(temp->pend_msgs_head), msg, msg_id, sender);    
         }
@@ -165,6 +161,8 @@ int storeMsg(char * username, char* msg, unsigned int msg_id, char * sender){
     return -1; //User was not found
 }
 
+/* Increments the last-sent-message ID associated to the input user
+    Return the value of the updated ID */
 unsigned int updateLastID(char * username){
     struct user *temp = user_head;
 
@@ -184,30 +182,10 @@ unsigned int updateLastID(char * username){
     return 0;
 }
 
-void printPendMsgs(char * username){
-    struct user *temp = user_head;
-
-    /* Iterate over the list */
-    while(temp != NULL){
-        if(strcmp(temp->username, username) == 0){  //User found
-            printMsgs(&(temp->pend_msgs_head));     
-        }
-        temp = temp->next;
-    }
-}
-
-void removePendMsg(char * username){
-    struct user *temp = user_head;
-
-    /* Iterate over the list */
-    while(temp != NULL){
-        if(strcmp(temp->username, username) == 0){  //User found
-            removeMsg(&(temp->pend_msgs_head));     
-        }
-        temp = temp->next;
-    }
-}
-
+/* Checks if the input user is connected 
+    Return 0 if the user is disconnected
+        1 if the user is connected
+        2 if error (user was not found) */
 char isConnected(char * username){
     struct user *temp = user_head;
     /* Iterate over the list */
@@ -221,6 +199,9 @@ char isConnected(char * username){
     return 2;
 }
 
+/* Retrieves the IP associated to a user in the list
+    Returns a char array with the IP of the user
+        NULL if the user was not found */
 char * getUserIP(char * username){
     struct user *temp = user_head;
     /* Iterate over the list */
@@ -233,6 +214,9 @@ char * getUserIP(char * username){
     return NULL;
 }
 
+/* Retrieves the port number associated to a user in the list
+    Return the port number
+        0 if the user was not found */
 uint16_t getUserPort(char * username){
     struct user *temp = user_head;
     /* Iterate over the list */
@@ -245,6 +229,9 @@ uint16_t getUserPort(char * username){
     return 0;
 }
 
+/* Retrieves a pointer to the head of the pending message list associated to a user
+    Return the pointer to the head of the message list 
+        NULL if the user was not found */
 struct msg ** getPendMsgHead(char * username){
     struct user *temp = user_head;
     /* Iterate over the list */

@@ -12,12 +12,16 @@ pthread_cond_t free_list;
 /* Variable that controls the state of the socket created by the connection 'accept' */
 int busy_socket;
 
+/* Declare the server socket as global variable */
+int s_server;
+
 /* Declare the list of users */
 struct user *users;
 
+/* ================FUNCTION HEADERS================ */
 void interruptHandler(int sig);
 void * manageRequest(int *sd);
 void toUpperCase(char * string);
 int sendMessage(char * sender, char * receiver, char * msg, unsigned int msg_id, char stored);
-int sendAck(char * sender, unsigned int msg_id);
+void sendAck(char * sender, unsigned int msg_id);
 int storeMessage(char * sender, char * receiver, char * msg, unsigned int mgs_id);

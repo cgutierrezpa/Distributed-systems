@@ -82,7 +82,7 @@ class client {
 		}
 		catch (java.io.IOException e) {
 			System.out.println("Exception: " + e);
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 		System.out.println("c> REGISTER FAIL");
 		return RC.ERROR;
@@ -154,7 +154,7 @@ class client {
 		}
 		catch (java.io.IOException e) {
 			System.out.println("Exception: " + e);
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 		System.out.println("c> UNREGISTER FAIL");
 		return RC.ERROR;
@@ -218,7 +218,6 @@ class client {
 				case 0:
 					/* Start a new thread where */
 					server_thread.start(sock);
-					//server_thread = new ServerThread(sock).start();
 					/* Bind the user to the client */
 					connected_user = user;
 					System.out.println("c> CONNECT OK");
@@ -237,7 +236,7 @@ class client {
 		}
 		catch (java.io.IOException e) {
 			System.out.println("Exception: " + e);
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 		System.out.println("c> CONNECT FAIL");
 		return RC.ERROR;
@@ -283,8 +282,8 @@ class client {
 			//Decode the response from the server
 			switch(response){
 				case 0:
-					/* Unbind the user from the client. We need to check if the  */
-					if(connected_user != null) connected_user = null;
+					/* Unbind the user from the client */
+					connected_user = null;
 					server_thread.kill();
 					System.out.println("c> DISCONNECT OK");
 					return RC.OK;
@@ -295,8 +294,17 @@ class client {
 					System.out.println("c> DISCONNECT FAIL / USER NOT CONNECTED");
 					return RC.USER_ERROR;
 				case 3:
-					/* In case of error in the disconnection process, stop the execution of the thread */
-					server_thread.kill();
+					/* In case of error in the disconnection process, stop the execution of the thread
+					and unbind the user from the client as if the disconnection has been made. But if the 
+					disconnect command executed was not executed for the user that is bound to the client
+					then nothing is done */
+					if(connected_user != null){
+						/* Check if the user coincides with the linked user */
+						if(connected_user.equals(user)){
+							connected_user = null;
+							server_thread.kill();
+						}
+					}
 					System.out.println("c> DISCONNECT FAIL");
 					return RC.ERROR;
 			}
@@ -304,10 +312,19 @@ class client {
 		}
 		catch (java.io.IOException e) {
 			System.out.println("Exception: " + e);
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
-		/* In case of error in the disconnection process, stop the execution of the thread */
-		server_thread.kill();
+		/* In case of error in the disconnection process, stop the execution of the thread
+		and unbind the user from the client as if the disconnection has been made. But if the 
+		disconnect command executed was not executed for the user that is bound to the client
+		then nothing is done */
+		if(connected_user != null){
+			/* Check if the user coincides with the linked user */
+			if(connected_user.equals(user)){
+				connected_user = null;
+				server_thread.kill();
+			}
+		}
 		System.out.println("c> DISCONNECT FAIL");
 		return RC.ERROR;
 	}
@@ -348,7 +365,6 @@ class client {
 			out.write(0);
 
 			//4. A string of characters is sent with the user that receives the message
-			System.out.println("Usuario es: " + user);
 			out.writeBytes(user);
 			out.write(0);
 
@@ -395,12 +411,18 @@ class client {
 		}
 		catch (java.io.IOException e) {
 			System.out.println("Exception: " + e);
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 		System.out.println("c> SEND FAIL");
 		return RC.ERROR;
 	}
-
+	/**
+	 * @brief Trims the input message to 255 characters
+	 * 
+	 * @param message - String to be trimmed
+	 * 
+	 * @return message - Result String
+	 */
 	static String trimMessage(String message){
 		/* Maximum length is of 255 characters because 1 character is reserved for ASCII 0 */
 		int maxLength = 255;
@@ -493,7 +515,7 @@ class client {
 				}				
 			} catch (java.io.IOException e) {
 				System.out.println("Exception: " + e);
-				e.printStackTrace();
+				//e.printStackTrace();
 			}
 		}
 	}
@@ -573,12 +595,19 @@ class client {
 	}
 }
 
+/********************* SERVERTHREAD **********************/
+
 class ServerThread extends Thread{
-	private ServerSocket sc;
-	private volatile Thread blinker;
+
+	private ServerSocket sc;			//ServerSocket of the listening thread
+	private volatile Thread blinker;	//Thread of type volatile that will be attached to the ServerThread
+	private Socket sd;
 
 	/**
-	 * @brief Starts the server thread and initializes the ServerSocket property
+	 * @brief Constructor. Starts the server thread and initializes the ServerSocket property
+	 *  
+	 * @param sc - Initialized ServerSocket
+	 *
 	 */ 
 	public void start(ServerSocket sc){
 		blinker = new Thread(this);
@@ -587,9 +616,15 @@ class ServerThread extends Thread{
 	}
 
 	/**
-	 * @brief Destroys the server thread 
+	 * @brief Destroys the server thread
 	 */ 
 	public void kill(){
+		try{
+			this.sd.close();
+		}
+		catch(IOException e){
+			System.out.println("Exception: " + e);
+		}
 		blinker = null;
 	}
 
@@ -598,16 +633,14 @@ class ServerThread extends Thread{
 	 */ 
 	public void run(){
 		Thread thisThread = Thread.currentThread();
-		Socket sd = null;
-
+		sd = null;
 		while(blinker == thisThread){
 			try{
 				/* Waiting for connection */
-				
 				sd = this.sc.accept();
 
 				DataInputStream msg_in = new DataInputStream(sd.getInputStream());
-
+				/* Receive the string encoding the operation */
 				String operation = new String();
 				byte ch;
 				do{
@@ -615,30 +648,31 @@ class ServerThread extends Thread{
 					if (ch != 0) operation = operation + ((char) ch);
 					
 				} while(ch != 0);
-
+				/* Prepare the string for the ID of the message sent/received */
 				String id = new String();
 
 				switch(operation){
 					case "SEND_MESSAGE":
+						/* Read the sender username from the socket */
 						String sender = new String();
 						do{
 							ch = msg_in.readByte();
 							if (ch != 0) sender = sender + ((char) ch);
 							
 						} while(ch != 0);
-
+						/* Read the ID of the received message */
 						do{
 							ch = msg_in.readByte();
 							if (ch != 0) id = id + ((char) ch);
 						} while(ch != 0);
-
+						/* Read the string containing the body of the message */
 						String msg = new String();
 						do{
 							ch = msg_in.readByte();
 							if (ch != 0) msg = msg + ((char) ch);
 							
 						} while(ch != 0);
-
+						/* Prompt */
 						System.out.println("MESSAGE " + id + " FROM " + sender + ":");
 						System.out.println("\t" + msg);
 						System.out.println("END");
@@ -646,6 +680,7 @@ class ServerThread extends Thread{
 						break;
 
 					case "SEND_MESS_ACK":
+						/* Read the id of the message being acknowledged */
 						do{
 							ch = msg_in.readByte();
 							if (ch != 0) id = id + ((char) ch);
@@ -660,10 +695,17 @@ class ServerThread extends Thread{
 			}
 			catch(Exception e){
 				System.out.println("Exception: " + e);
-				e.printStackTrace();
+				//e.printStackTrace();
 				this.kill();
 			}
 		}
-		
+		/* If the thread exits the loop for any reason, try to close the socket */
+		try{
+			sd.close();
+		}
+		catch(Exception e){
+			System.out.println("Exception: " + e);
+			this.kill();
+		}
 	}
 }
