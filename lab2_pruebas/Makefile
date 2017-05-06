@@ -5,7 +5,7 @@ LISTS_PATH = ./lists
 
 SERVER  = server
 CLIENT = client
-MD5_WS = ./md5/endpoint/MD5Publisher
+MD5_WS = ./md5/server/endpoint/MD5Publisher
 MONITOR = monitor
 RPC_SERVER = store_service_server
 

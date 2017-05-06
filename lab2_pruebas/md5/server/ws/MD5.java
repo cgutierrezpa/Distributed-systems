@@ -1,4 +1,4 @@
-package md5.ws;
+package md5.server.ws;
 
 import javax.jws.WebMethod;
 import javax.jws.WebService;

@@ -39,6 +39,9 @@ main (int argc, char *argv[])
 		printf("MESS: %s\n", res->msg);
 		printf("MD5: %s\n", res->md5);
 	}
+	int result;
+	getnummessages_1(argv[2], &result, clnt);
+	printf("Total number of messages: %d\n", result);
 	/* Destroy the connection */
 	clnt_destroy (clnt);
 	exit (0);

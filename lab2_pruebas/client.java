@@ -2,8 +2,9 @@ import java.io.*;
 import gnu.getopt.Getopt;
 import java.net.Socket;
 import java.net.ServerSocket;
-import md5_client.MD5;
-import md5_client.MD5ImplService;
+import md5.client.MD5;
+import md5.client.MD5ImplService;
+import java.net.URL;
 
 
 class client {
@@ -27,6 +28,8 @@ class client {
 	private static String connected_user = null;
 	/* Instantiate and prepare an empty ServerThread for further connection */
 	private static ServerThread server_thread = new ServerThread();
+	/* Variable for storing the IP address of the md5 web service server */
+	private static String _md5_ws = null;
 		
 	
 	/********************* METHODS ********************/
@@ -339,8 +342,9 @@ class client {
 		String md5;
 		/* Calculate the MD5 of the message */
 		try{
+			URL url = new URL(new String("http://" + _md5_ws + "/ws/md5"));
 			/* Define the MD5 Web service variables */
-			MD5ImplService md5Service = new MD5ImplService();
+			MD5ImplService md5Service = new MD5ImplService(url);
 			MD5 md5_ws = md5Service.getMD5ImplPort();
 			md5 = md5_ws.getMD5(message);
 		}
@@ -548,7 +552,7 @@ class client {
 	 */ 
 	static boolean parseArguments(String [] argv) 
 	{
-		Getopt g = new Getopt("client", argv, "ds:p:");
+		Getopt g = new Getopt("client", argv, "ds:p:w:");
 
 		int c;
 		String arg;
@@ -564,6 +568,9 @@ class client {
 				case 'p':
 					arg = g.getOptarg();
 					_port = Integer.parseInt(arg);
+					break;
+				case 'w':
+					_md5_ws = g.getOptarg();
 					break;
 				case '?':
 					System.out.print("getopt() returned " + c + "\n");

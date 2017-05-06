@@ -113,6 +113,21 @@ int main(int argc, char * argv[]){
 	until the thread stores a local copy of the socket descriptor */
 	busy_socket = TRUE;
 
+	CLIENT *clnt;
+	/* Create connection with the storage service */
+	clnt = clnt_create (store_service_ip, STORE_SERVICE, STORE_VERSION, "tcp");
+	/* If error, the service is unavailable. Show error and exit */
+	if (clnt == NULL) {
+		fprintf(stderr, "ERROR, STORAGE SERVICE UNAVAILABLE");
+		fprintf(stderr, "\n%s", "s> ");	/* Prompt */
+	}
+	else{
+		/* Initialize the storage service */
+		init_1(NULL, clnt);
+
+		clnt_destroy (clnt);
+	}
+
 	signal(SIGINT, interruptHandler); /* Handles the ctrl+c signal to interrupt the server */
 	fprintf(stderr, "%s", "s> ");	/* Prompt */
 

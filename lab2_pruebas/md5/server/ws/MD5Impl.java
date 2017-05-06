@@ -1,5 +1,5 @@
 // Based on http://www.mkyong.com/java/java-md5-hashing-example/
-package md5.ws;
+package md5.server.ws;
 
 import java.io.FileInputStream;
 import java.security.MessageDigest;
