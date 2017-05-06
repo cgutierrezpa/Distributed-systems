@@ -33,7 +33,7 @@ exercise3_1(char *host)
 	for(i = 0; i < length; i++){
 		k = sizes[i];
 		char *string = calloc(k, sizeof(char));
-		memset(string, '1', k);
+		memset(string, '1', k-1);
 		gettimeofday(&t1, NULL);
 		unsigned long long time1 =
 			    (unsigned long long)(t1.tv_sec) * 1000000 +
