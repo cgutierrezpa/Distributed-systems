@@ -18,6 +18,8 @@ int s_server;
 /* Declare the list of users */
 struct user *users;
 
+char * store_service_ip; /* Variable for the IP of the message storage service server */
+
 /* ================FUNCTION HEADERS================ */
 void interruptHandler(int sig);
 void * manageRequest(int *sd);
@@ -25,3 +27,4 @@ void toUpperCase(char * string);
 int sendMessage(char * sender, char * receiver, char * msg, char * md5, unsigned int msg_id, char stored);
 void sendAck(char * sender, unsigned int msg_id);
 int storeMessage(char * sender, char * receiver, char * msg, char * md5, unsigned int mgs_id);
+void storeMessage_svc(char * sender, char * receiver, unsigned int id, char * msg, char * md5);

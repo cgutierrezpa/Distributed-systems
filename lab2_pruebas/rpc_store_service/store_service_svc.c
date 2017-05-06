@@ -11,6 +11,7 @@
 #include <memory.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 #ifndef SIG_PF
 #define SIG_PF void(*)(int)
@@ -113,6 +114,7 @@ int
 main (int argc, char **argv)
 {
 	register SVCXPRT *transp;
+	struct sockaddr_in service_addr; /* Struct to store the address of the server */
 
 	pmap_unset (STORE_SERVICE, STORE_VERSION);
 
@@ -135,7 +137,17 @@ main (int argc, char **argv)
 		fprintf (stderr, "%s", "unable to register (STORE_SERVICE, STORE_VERSION, tcp).");
 		exit(1);
 	}
-
+	/* Get the machine's IP address */
+	get_myaddress(&service_addr);
+	char * ip = inet_ntoa(service_addr.sin_addr);
+	/* If the address could not be obtained (no network connection), then print error and exit */
+	if(strlen(ip) == 0){
+		fprintf (stderr, "%s", "cannot get the IP address of the service.");
+		exit(1);
+	}
+	printf("Store service running at: %s\n", ip);
+	/* Self-invoke the init process when starting the server */
+	init_1_svc(NULL, NULL);
 	svc_run ();
 	fprintf (stderr, "%s", "svc_run returned");
 	exit (1);

@@ -30,7 +30,31 @@ bool_t
 init_1_svc(void *result, struct svc_req *rqstp)
 {
 	bool_t retval = TRUE;
-	/* Initialize the lists to NULL */
+	/* If the list of users is not empty, traverse the list and free each node */
+	if(usr_head != NULL){
+		struct user *prev = usr_head;
+		/* While the list is greater than 1, advance in the list and eliminate the first node of the list */
+		while(usr_head->next != NULL){
+			/* If the list of messages associated to the user is not empty, traverse it and free the memory */
+			if(usr_head->sent_msgs_head != NULL){
+				struct msg *prev_msg = usr_head->sent_msgs_head;
+				/* While the list is greater than 1, advance in the list and eliminate the first node */
+				while(usr_head->sent_msgs_head->next != NULL){
+					usr_head->sent_msgs_head = usr_head->sent_msgs_head->next;
+					free(prev_msg);
+					prev_msg = usr_head->sent_msgs_head;
+				}
+				/* Free the resources of the last element in the list */
+				free(prev_msg);
+			}
+			usr_head = usr_head->next;
+			free(prev);
+			prev = usr_head;
+		}
+		/* Free the resources of the last element in the list */
+		free(prev);
+	}
+	/* Initialize the list of users to NULL */
 	usr_head = NULL;
 
 	return retval;
@@ -47,7 +71,8 @@ store_1_svc(char *sender, char *receiver, u_int msg_id, char *msg, char *md5, in
 		if(strcmp(temp->name, sender) == 0){	//User found in the list
 			/* Append the message to the list of sent messages by that user */
 			*result = addMsg(&(temp->sent_msgs_head), msg, md5, msg_id, receiver);
-			if(*result == -1) return retval;
+			/* If -1 is returned, the memory is full and message could not be stored. Return FALSE */
+			if(*result == -1) return FALSE;
 			/* Update the message counter */
 			temp->num_msgs = temp->num_msgs + 1;
 			return retval;
@@ -57,14 +82,15 @@ store_1_svc(char *sender, char *receiver, u_int msg_id, char *msg, char *md5, in
 	/* If the code reaches this point, no user was found, so add it to the list and set 
 	the message counter to 1 */
 	temp = (struct user *) malloc(sizeof(struct user));
-	/* If malloc returns error (full memory or other) */
-	if(temp == NULL) return -1;
+	/* If malloc returns error (full memory or other). Return FALSE */
+	if(temp == NULL) return FALSE;
 	strcpy(temp->name, sender);
 	temp->next = NULL;
 	temp->sent_msgs_head = NULL;
 	*result = addMsg(&(temp->sent_msgs_head), msg, md5, msg_id, receiver);
-	if(*result == -1) return retval;
-	temp->num_msgs = 1;		/* Set the message counter to 1 */
+	/* If -1 is returned, the memory is full and message could not be stored. Return FALSE */
+	if(*result == -1) return FALSE;
+	temp->num_msgs = 1;		/* Set the sent-message counter to 1 */
 
 	temp->next = usr_head;
 	usr_head = temp;
@@ -82,13 +108,14 @@ getnummessages_1_svc(char *user, int *result,  struct svc_req *rqstp)
 
 	while(temp != NULL){
 		if(strcmp(temp->name, user) == 0){	//Sender is found in the list
-			/* Search for the message with that ID */
-			struct msg *msg_temp = temp->sent_msgs_head;
-			/* Iterate through the list of sent messages */
-			while(msg_temp != NULL){
-				*result = *result + 1;
-				msg_temp = msg_temp->next;
-			}
+			// /* Search for the message with that ID */
+			// struct msg *msg_temp = temp->sent_msgs_head;
+			//  Iterate through the list of sent messages 
+			// while(msg_temp != NULL){
+			// 	*result = *result + 1;
+			// 	msg_temp = msg_temp->next;
+			// }
+			*result = temp->num_msgs;
 			return retval;
 		}
 		temp = temp->next;

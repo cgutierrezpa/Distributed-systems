@@ -238,7 +238,7 @@ class client {
 		}
 		catch (java.io.IOException e) {
 			System.out.println("Exception: " + e);
-			//e.printStackTrace();
+			e.printStackTrace();
 		}
 		System.out.println("c> CONNECT FAIL");
 		return RC.ERROR;
@@ -290,23 +290,15 @@ class client {
 					System.out.println("c> DISCONNECT OK");
 					return RC.OK;
 				case 1:
+					checkAndUnbindUser(user);
 					System.out.println("c> DISCONNECT FAIL / USER DOES NOT EXIST");
 					return RC.USER_ERROR;
 				case 2:
+					checkAndUnbindUser(user);
 					System.out.println("c> DISCONNECT FAIL / USER NOT CONNECTED");
 					return RC.USER_ERROR;
 				case 3:
-					/* In case of error in the disconnection process, stop the execution of the thread
-					and unbind the user from the client as if the disconnection has been made. But if the 
-					disconnect command executed was not executed for the user that is bound to the client
-					then nothing is done */
-					if(connected_user != null){
-						/* Check if the user coincides with the linked user */
-						if(connected_user.equals(user)){
-							connected_user = null;
-							server_thread.kill();
-						}
-					}
+					checkAndUnbindUser(user);
 					System.out.println("c> DISCONNECT FAIL");
 					return RC.ERROR;
 			}
@@ -316,6 +308,11 @@ class client {
 			System.out.println("Exception: " + e);
 			//e.printStackTrace();
 		}
+		checkAndUnbindUser(user);
+		System.out.println("c> DISCONNECT FAIL");
+		return RC.ERROR;
+	}
+	private static void checkAndUnbindUser(String user){
 		/* In case of error in the disconnection process, stop the execution of the thread
 		and unbind the user from the client as if the disconnection has been made. But if the 
 		disconnect command executed was not executed for the user that is bound to the client
@@ -327,8 +324,6 @@ class client {
 				server_thread.kill();
 			}
 		}
-		System.out.println("c> DISCONNECT FAIL");
-		return RC.ERROR;
 	}
 
 	 /**

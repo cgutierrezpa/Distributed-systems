@@ -32,8 +32,8 @@ int main(int argc, char * argv[]){
 	int server_port;
 
 	/* Check command */
-	if(argc != 3 || strcmp(argv[1],"-p") != 0){
-		printf("Usage: ./server -p <port>\n");
+	if(argc != 5 || strcmp(argv[1],"-p") != 0){
+		printf("Usage: ./server -p <port> -s <store_service>\n");
 		exit(-1);
 	} 
 
@@ -44,18 +44,21 @@ int main(int argc, char * argv[]){
 			exit(-1);
 	}
 
+	/* Store the IP of the storage service */
+	store_service_ip = argv[4];
+
 	/* Initialize mutexes */
     if(pthread_mutex_init(&socket_mtx, NULL) != 0) {
-        perror("[SERVER]: Error when initializing the mutex");
+        printf("[SERVER]: Error when initializing the mutex");
         exit(-1);
     }
     if(pthread_mutex_init(&list_mtx, NULL) != 0) {
-        perror("[SERVER]: Error when initializing the mutex");
+        printf("[SERVER]: Error when initializing the mutex");
         exit(-1);
     }
     /* Initialize condition variable for copying the socket descriptor in the thread */
     if(pthread_cond_init(&free_socket, NULL) != 0) {
-        perror("[SERVER]: Error when initializing the mutex");
+        printf("[SERVER]: Error when initializing the mutex");
         exit(-1);
     }
 
@@ -66,7 +69,7 @@ int main(int argc, char * argv[]){
 
 	s_server = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);	/* This socket has no address assigned */
 	if(s_server == -1){
-		perror("Error when creating the socket");
+		printf("Error when creating the socket");
 		exit(-1);
 	}
 
@@ -87,13 +90,13 @@ int main(int argc, char * argv[]){
 
 	/* Bind the address to the listening socket */
 	if((bind(s_server, (struct sockaddr*) &server_addr, sizeof(server_addr))) == -1){
-		perror("Error when binding the address to the socket");
+		printf("Error when binding the address to the socket");
 		exit(-1);
 	}
 
 	/* Set the socket to listen incoming requests */
 	if(listen(s_server, 5) == -1){
-		perror("Error when listening to the socket");
+		printf("Error when listening to the socket");
 		exit(-1);
 	} /* Backlog is 5, maximum number of queued requests is 5 */
 
@@ -109,20 +112,6 @@ int main(int argc, char * argv[]){
 	/* Set the control variable to TRUE so that the listening thread waits
 	until the thread stores a local copy of the socket descriptor */
 	busy_socket = TRUE;
-	
-	CLIENT *clnt;
-			
-	clnt = clnt_create ("127.0.0.1", STORE_SERVICE, STORE_VERSION, "tcp");
-	if (clnt == NULL) {
-		clnt_pcreateerror ("127.0.0.1");
-		exit (1);
-	}
-	int result;
-	init_1(&result, clnt);
-	if(result == -1) printf("[SERVER_THREAD]: Error in the storage service\n");
-	else printf("Storage service init OK\n");
-
-	clnt_destroy (clnt);
 
 	signal(SIGINT, interruptHandler); /* Handles the ctrl+c signal to interrupt the server */
 	fprintf(stderr, "%s", "s> ");	/* Prompt */
@@ -133,14 +122,14 @@ int main(int argc, char * argv[]){
 		/* Accept client connections. If error, shut down the server */
 		sc = accept(s_server, (struct sockaddr *) &client_addr, &cl_addr_size);
 		if(sc == -1){
-			perror("Error when accepting the connection");
+			printf("Error when accepting the connection");
 			/* Close listening server socket */
 			close(s_server);
 			exit(-1);
 		}
 		/* Once accepted, create a thread to handle the request. If error, shut down the server */
 		if(pthread_create(&thread, &thread_att, (void *) manageRequest, &sc) != 0) {
-        	perror("[SERVER]: Error when creating the thread");
+        	printf("[SERVER]: Error when creating the thread");
         	/* Close both listening socket and the one resulting from the accept operation */
         	close(s_server);
         	close(sc);
@@ -179,7 +168,7 @@ void * manageRequest(int *sd){
 	/* Read the operation. If error, close the socket and terminate the thread */
 	n = readLine(s_local, operation_buff, MAX_COMMAND);
 	if(n == -1){
-		perror("[SERVER_THREAD]: Error when reading from the socket");
+		printf("[SERVER_THREAD]: Error when reading from the socket");
 		if(close(s_local) == -1){
 			/* If there is an error when closing the socket, shut down the server */
 			interruptHandler(SIGINT);
@@ -190,7 +179,7 @@ void * manageRequest(int *sd){
 	and terminate the thread */
 	m = readLine(s_local, user_buff, MAX_USERNAME);
 	if(m == -1){
-		perror("[SERVER_THREAD]: Error when reading from the socket\n");
+		printf("[SERVER_THREAD]: Error when reading from the socket\n");
 		if(close(s_local) == -1){
 			/* If there is an error when closing the socket, shut down the server */
 			interruptHandler(SIGINT);
@@ -223,7 +212,7 @@ void * manageRequest(int *sd){
 
 		n = readLine(s_local, msg_buff, MAX_MSG);
 		if(n == -1){
-			perror("[SERVER_THREAD]: Error when reading from the socket");
+			printf("[SERVER_THREAD]: Error when reading from the socket");
 			if(close(s_local) == -1){
 				/* If there is an error when closing the socket, shut down the server */
 				interruptHandler(SIGINT);
@@ -235,16 +224,16 @@ void * manageRequest(int *sd){
 		/* Get the client IP address attached to the socket */
 		int err = getpeername(s_local, (struct sockaddr *) &client_addr_local, &addr_len);
 		if (err == -1){
-			perror("[SERVER_THREAD]: Error when getting client address");
+			printf("[SERVER_THREAD]: Error when getting client address");
 			/* Send error 3 to client and close socket */
 			out = 3;
-			goto respond_to_client;
 		}
-		/* Connect the user to the server */
-		pthread_mutex_lock(&list_mtx);
-		out = connectUser(user_buff, inet_ntoa(client_addr_local.sin_addr), client_port);
-		pthread_mutex_unlock(&list_mtx);
-
+		/* Connect the user to the server if no error */
+		if(out != 3){
+			pthread_mutex_lock(&list_mtx);
+			out = connectUser(user_buff, inet_ntoa(client_addr_local.sin_addr), client_port);
+			pthread_mutex_unlock(&list_mtx);
+		}
 
 		/* If result is 0, then check for the pending messages and send them */
 		if(out == 0){
@@ -290,8 +279,8 @@ void * manageRequest(int *sd){
 				*pend_msg = dequeueMsg(&(*pend_msg));
 			}
 			pthread_mutex_unlock(&list_mtx);
+			goto destroy_thread;
 		}
-		goto destroy_thread;
 	}
 	else if(strcmp(operation_buff, "DISCONNECT") == 0){
 		/* Get the IP from which the command is being executed */
@@ -300,7 +289,7 @@ void * manageRequest(int *sd){
 
 		int err = getpeername(s_local, (struct sockaddr *) &client_addr_local, &addr_len);
 		if (err == -1){
-			perror("Error when getting client address");
+			printf("Error when getting client address");
 			/* Send error 3 to client and close socket */
 			out = 3;
 			goto respond_to_client;
@@ -319,7 +308,7 @@ void * manageRequest(int *sd){
 		/* Read the destination user from the socket */
 		m = readLine(s_local, dest_user_buff, MAX_USERNAME);
 		if(m == -1){
-			perror("[SERVER_THREAD]: Error when reading from the socket\n");
+			printf("[SERVER_THREAD]: Error when reading from the socket\n");
 			if(close(s_local) == -1){
 				/* If there is an error when closing the socket, shut down the server */
 				interruptHandler(SIGINT);
@@ -332,7 +321,7 @@ void * manageRequest(int *sd){
 		/* Read the message from the socket */
 		n = readLine(s_local, msg_buff, MAX_MSG);
 		if(n == -1){
-			perror("[SERVER_THREAD]: Error when reading from the socket\n");
+			printf("[SERVER_THREAD]: Error when reading from the socket\n");
 			if(close(s_local) == -1){
 				/* If there is an error when closing the socket, shut down the server */
 				interruptHandler(SIGINT);
@@ -343,7 +332,7 @@ void * manageRequest(int *sd){
 		/* Read the MD5 hash from the socket */
 		m = readLine(s_local, md5_buff, MAX_MD5);
 		if(m == -1){
-			perror("[SERVER_THREAD]: Error when reading from the socket\n");
+			printf("[SERVER_THREAD]: Error when reading from the socket\n");
 			if(close(s_local) == -1){
 				/* If there is an error when closing the socket, shut down the server */
 				interruptHandler(SIGINT);
@@ -378,19 +367,7 @@ void * manageRequest(int *sd){
 			out = 0;
 			/////////////////////////////////////////////
 			/* Store the message in the storage server */
-			CLIENT *clnt;
-			
-			clnt = clnt_create ("127.0.0.1", STORE_SERVICE, STORE_VERSION, "tcp");
-			if (clnt == NULL) {
-				clnt_pcreateerror ("127.0.0.1");
-				exit (1);
-			}
-			int result;
-			store_1(user_buff, dest_user_buff, last_id, msg_buff, md5_buff, &result, clnt);
-			if(result == -1) printf("[SERVER_THREAD]: Error in the storage service\n");
-			else printf("Message stores OK in storage service\n");
-
-			clnt_destroy (clnt);
+			storeMessage_svc(user_buff, dest_user_buff, last_id, msg_buff, md5_buff);
 
 			if((send_msg(s_local, &out, sizeof(out))) == -1){
 				/* If error when sending the message, close the socket and exit */
@@ -432,19 +409,8 @@ void * manageRequest(int *sd){
 			out = 0;
 			/////////////////////////////////////////////
 			/* Store the message in the storage server */
-			CLIENT *clnt;
-			
-			clnt = clnt_create ("127.0.0.1", STORE_SERVICE, STORE_VERSION, "tcp");
-			if (clnt == NULL) {
-				clnt_pcreateerror ("127.0.0.1");
-				exit (1);
-			}
-			int result;
-			store_1(user_buff, dest_user_buff, last_id, msg_buff, md5_buff, &result, clnt);
-			if(result == -1) printf("[SERVER_THREAD]: Error in the storage service\n");
-			else printf("Message stores OK in storage service\n");
+			storeMessage_svc(user_buff, dest_user_buff, last_id, msg_buff, md5_buff);
 
-			clnt_destroy (clnt);
 			if ((send_msg(s_local, &out, sizeof(out))) == -1){
 				/* If error when sending the message, close the socket and exit */
 				if(close(s_local) == -1){
@@ -468,7 +434,7 @@ void * manageRequest(int *sd){
 			/* At this point, the message is assumed to  */
 			sendAck(user_buff, last_id);
 		}
-		/* The response to the client is handled within this else-of statement, so the
+		/* The response to the client is handled within this else-if statement, so the
 		'respond_to_client' label is skipped and proceed to close the socket */
 		goto destroy_thread; 
 	}
@@ -498,7 +464,7 @@ void * manageRequest(int *sd){
 
 	destroy_thread:
 		if(close(s_local) == -1){
-			perror("[SERVER_THREAD]: Error when closing the socket in the thread");
+			printf("[SERVER_THREAD]: Error when closing the socket in the thread");
 			exit(-1);
 		}
 		pthread_exit(NULL);
@@ -673,5 +639,29 @@ void sendAck(char * sender, unsigned int msg_id){
 		/* If there is an error when closing the socket, shut down the server */
 		interruptHandler(SIGINT);
 	}
+	return;
+}
+/* Connects to the storage service (if available) and stores the message with the corresponding information
+passed as parameters */
+void storeMessage_svc(char * sender, char * receiver, unsigned int id, char * msg, char * md5){
+	CLIENT *clnt;
+	/* Create connection with the storage service */
+	clnt = clnt_create (store_service_ip, STORE_SERVICE, STORE_VERSION, "tcp");
+	/* If error, the service is unavailable. Show error and exit */
+	if (clnt == NULL) {
+		fprintf(stderr, "ERROR, STORAGE SERVICE UNAVAILABLE");
+		fprintf(stderr, "\n%s", "s> ");	/* Prompt */
+		return;
+	}
+	int result;
+	/* Call the storage service */
+	store_1(sender, receiver, id, msg, md5, &result, clnt);
+	/* Check for internal server error in the process */
+	if(result == -1) fprintf(stderr, "ERROR IN THE STORAGE SERVICE");
+	/* If everything went OK, prompt a message in the console */
+	else fprintf(stderr, "MESSAGE %d STORED OK IN STORAGE SERVICE", id);
+	fprintf(stderr, "\n%s", "s> ");	/* Prompt */
+	/* Destroy the client and return */
+	clnt_destroy (clnt);
 	return;
 }
