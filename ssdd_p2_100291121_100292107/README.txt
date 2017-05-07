@@ -28,7 +28,7 @@ following commands:
 
 -Terminal 1: 'java -cp . md5.server.endpoint.MD5Publisher'
 
--Terminal 2: './store_service_server'
+-Terminal 2: './storeServer'
 
 -Terminal 3: './server -p <port_number> -s <storage_service_ip>'
 where <port_number> is the port number in which the service will be running, and <storage_service_ip> is the IP

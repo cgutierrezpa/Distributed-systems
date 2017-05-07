@@ -7,7 +7,7 @@ SERVER  = server
 CLIENT = client
 MD5_WS = ./md5/server/endpoint/MD5Publisher
 MONITOR = monitor
-RPC_SERVER = store_service_server
+RPC_SERVER = storeServer
 
 SOURCES_CLNT.c = 
 SOURCES_CLNT.h = 
