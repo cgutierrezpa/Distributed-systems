@@ -50,5 +50,5 @@ $(MD5_WS) :
 	javac -cp . $(MD5_WS).java
 
  clean:
-	 $(RM) core $(SERVER) $(MONITOR) $(RPC_SERVER) *.o ./*/*.o *.class ./*/*.class ./*/*/*.class
+	 $(RM) core $(SERVER) $(MONITOR) $(RPC_SERVER) *.o ./*/*.o *.class ./*/*.class ./*/*/*.class ./*/*/*/*.class
 

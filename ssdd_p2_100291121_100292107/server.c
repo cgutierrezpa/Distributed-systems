@@ -120,8 +120,7 @@ int main(int argc, char * argv[]){
 	clnt = clnt_create (store_service_ip, STORE_SERVICE, STORE_VERSION, "tcp");
 	/* If error, the service is unavailable. Show error and exit */
 	if (clnt == NULL) {
-		fprintf(stderr, "ERROR, STORAGE SERVICE UNAVAILABLE");
-		fprintf(stderr, "\n%s", "s> ");	/* Prompt */
+		fprintf(stderr, "s> ERROR, STORAGE SERVICE UNAVAILABLE\n");
 	}
 	else{
 		init_1(NULL, clnt);
@@ -271,17 +270,19 @@ void * manageRequest(int *sd){
 				pthread_mutex_unlock(&list_mtx);
 				char sender[MAX_USERNAME];
 				char msg_body[MAX_MSG];
+				char msg_md5[MAX_MD5];
 
 				/* Get the name of the sender, the id and the body associated to the message to be sent */
 				pthread_mutex_lock(&list_mtx);
 				strcpy(sender, (*pend_msg)->sender);
 				int msg_id = (*pend_msg)->id;
 				strcpy(msg_body, (*pend_msg)->body);
+				strcpy(msg_md5, (*pend_msg)->md5);
 				pthread_mutex_unlock(&list_mtx);
 
 				/* Try to send the message. The 'stored' flag is set to 1 because the message
 				is already stored in the server */
-				int err = sendMessage(sender, user_buff, msg_body, md5_buff, msg_id, 1);
+				int err = sendMessage(sender, user_buff, msg_body, msg_md5, msg_id, 1);
 
 				/* If the message could not be delivered/stored, then exit the loop */
 				if(err != 0) goto destroy_thread;

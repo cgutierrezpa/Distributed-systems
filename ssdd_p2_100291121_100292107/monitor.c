@@ -45,7 +45,8 @@ main (int argc, char *argv[])
 	/*
 	int result;
 	getnummessages_1(argv[2], &result, clnt);
-	printf("Total number of messages: %d\n", result);
+	if(result != -1) printf("Total number of messages: %d\n", result);
+	else printf("The tuple client-id does not exist.\n");
 	*/
 	/* Destroy the connection */
 	clnt_destroy (clnt);
